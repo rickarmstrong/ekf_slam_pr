@@ -2,10 +2,10 @@ from math import cos, sin
 
 import numpy as np
 
-from ekf_slam import dt, LM_DIMS, POSE_DIMS
+from ekf_slam import dt, LM_DIMS, POSE_DIMS, LANDMARKS
 
 # Maps 3D pose space x_R [x  y  theta].T to the full EKF state space [x_R m].T.
-F_x = np.hstack((np.eye(POSE_DIMS), np.zeros((POSE_DIMS, POSE_DIMS + LM_DIMS))))
+F_x = np.hstack((np.eye(POSE_DIMS), np.zeros((POSE_DIMS, LM_DIMS * len(LANDMARKS)))))
 
 def g(u_t, mu):
     """
@@ -30,3 +30,11 @@ def g(u_t, mu):
 
     # Current (full) state + pose delta.
     return mu + F_x.T @ delta_x
+
+
+def get_vel_cmd():
+    # Constantly driving around in a big circle.
+    v = 1.0  # [m/s]
+    yaw_rate = 0.1  # [rad/s]
+    u = np.array([[v, yaw_rate]]).T
+    return u

@@ -10,23 +10,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from ekf_slam import dt, LM_DIMS, POSE_DIMS
+from ekf_slam.ekf import get_vel_cmd
 
 SIM_TIME = 50.0  # simulation time [s].
 MAX_RANGE = 20.0  # Maximum observation range.
 M_DIST_TH = 2.0  # Threshold of Mahalanobis distance for data association.
-
-# Initial robot pose and landmark ground truth: EKF SLAM can start from uninitialized landmark locations,
-# but we start with a fixed number of known locations for simplicity.
-INITIAL_POSE = np.zeros((POSE_DIMS,))
-LANDMARKS = np.array([
-    [10.0, -2.0],
-    [15.0, 10.0],
-    [3.0, 15.0],
-    [-5.0, 20.0]])
-
-# Simulated noise params.
-Q = np.diag([0.2, np.deg2rad(1.0)]) ** 2
-R = np.diag([1.0, np.deg2rad(10.0)]) ** 2
 
 
 SHOW_PLOT = False
@@ -47,14 +35,6 @@ def plot(hxDR, hxEst, hxTrue, landmarks, xEst):
              hxEst[1, :], "-r")
     plt.axis("equal")
     plt.grid(True)
-
-
-def get_vel_cmd():
-    # Constantly driving around in a big circle.
-    v = 1.0  # [m/s]
-    yaw_rate = 0.1  # [rad/s]
-    u = np.array([[v, yaw_rate]]).T
-    return u
 
 
 def calc_n_lm(x):
