@@ -2,10 +2,10 @@ from math import cos, sin
 
 import numpy as np
 
-from ekf_slam import dt, LM_DIMS, POSE_DIMS, LANDMARKS
+from ekf_slam import dt, LM_DIMS, POSE_DIMS, N_LANDMARKS
 
 # Maps 3D pose space x_R [x  y  theta].T to the full EKF state space [x_R m].T.
-F_x = np.hstack((np.eye(POSE_DIMS), np.zeros((POSE_DIMS, LM_DIMS * len(LANDMARKS)))))
+F_x = np.hstack((np.eye(POSE_DIMS), np.zeros((POSE_DIMS, LM_DIMS * N_LANDMARKS))))
 
 def g(u_t, mu):
     """
