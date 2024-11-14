@@ -4,77 +4,62 @@ Extended Kalman Filter SLAM example.
 Plotting and ground truth generation code borrowed from
 https://github.com/AtsushiSakai/PythonRobotics/tree/master/SLAM/EKFSLAM
 """
-import time
-
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ekf_slam import dt, LM_DIMS, POSE_DIMS
-from ekf_slam.ekf import get_vel_cmd
+from ekf_slam import DELTA_T, N_LANDMARKS, POSE_DIMS, R_sim, STATE_DIMS
+from ekf_slam.ekf import g, get_vel_cmd
 
-SIM_TIME = 50.0  # simulation time [s].
+SIM_TIME = 40.0  # simulation time [s].
 MAX_RANGE = 20.0  # Maximum observation range.
 M_DIST_TH = 2.0  # Threshold of Mahalanobis distance for data association.
 
 # Initial robot pose and landmark ground truth: EKF SLAM can start from uninitialized landmark locations,
 # but we start with a fixed number of known locations for simplicity.
-INITIAL_POSE = np.zeros((POSE_DIMS,))
+INITIAL_POSE = np.zeros((POSE_DIMS, 1))
 LANDMARKS = np.array([
     [10.0, -2.0],
     [15.0, 10.0],
     [3.0, 15.0],
     [-5.0, 20.0]])
+assert len(LANDMARKS) == N_LANDMARKS
 
 SHOW_PLOT = False
-
-def plot(hxDR, hxEst, hxTrue, landmarks, xEst):
-    plt.cla()
-    plt.plot(landmarks[:, 0], landmarks[:, 1], "*k")
-    plt.plot(xEst[0], xEst[1], ".r")
-
-    # plot landmarks
-    for i in range(calc_n_lm(xEst)):
-        plt.plot(xEst[POSE_DIMS + i * 2],
-                 xEst[POSE_DIMS + i * 2 + 1], "xg")
-    plt.plot(hxTrue[0, :],
-             hxTrue[1, :], "-b")
-    plt.plot(hxDR[0, :],
-             hxDR[1, :], "-k")
-    plt.plot(hxEst[0, :],
-             hxEst[1, :], "-r")
-    plt.axis("equal")
-    plt.grid(True)
-
-
-def calc_n_lm(x):
-    n = int((len(x) - POSE_DIMS) / LM_DIMS)
-    return n
-
 
 def main():
     t = 0.0
 
-    # Track ground truth robot pose (for display).
-    x_true = np.zeros((POSE_DIMS, 1))
-
     # Full state column vector,length 3+2*N, where N is the number of landmarks.
-    mu = np.zeros((POSE_DIMS + LM_DIMS * len(LANDMARKS), 1))
-    S = np.zeros((len(mu), len(mu)))  # Sigma, full covariance matrix.
+    mu_bar = np.zeros((STATE_DIMS))
+    mu_bar_prev = np.zeros((STATE_DIMS))
+
+    # Ground truth.
+    mu_gt_prev = np.zeros((STATE_DIMS))
 
     # Init history.
-    x_true_acc = np.array(INITIAL_POSE)
-    m_acc = LANDMARKS
-    mu_acc = mu
-    S_acc = S
+    mu_gt_h = mu_bar
+    mu_bar_h = mu_bar
 
     while SIM_TIME >= t:
-        u = get_vel_cmd()
+        u_t = get_vel_cmd()
+        mu_gt = g(u_t, mu_gt_prev)  # Noise-free prediction of next state, keeping only the pose for ground truth.
+        mu_bar = g(u_t, mu_bar_prev, DELTA_T, R_sim)  # Prediction of next state with some additive noise.
 
-        # store data history
+        # Store history for plotting.
+        mu_gt_h = np.vstack((mu_gt_h, mu_gt))
+        mu_bar_h = np.vstack((mu_bar_h, mu_bar))
 
-        t += dt
-        time.sleep(0.1)
+        t += DELTA_T
+        mu_gt_prev = mu_gt
+        mu_bar_prev = mu_bar
 
+#        time.sleep(0.1)
+
+    plt.plot(mu_gt_h[:, 0], mu_gt_h[:, 1], '-b')
+    plt.plot(mu_bar_h[:, 0], mu_bar_h[:, 1], '-k')
+    plt.axis('square')
+    plt.grid(True)
+    plt.show()
 
 if __name__ == '__main__':
     main()
