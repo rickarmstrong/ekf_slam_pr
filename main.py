@@ -30,11 +30,11 @@ def main():
     t = 0.0
 
     # Full state column vector,length 3+2*N, where N is the number of landmarks.
-    mu_bar = np.zeros((STATE_DIMS))
-    mu_bar_prev = np.zeros((STATE_DIMS))
+    mu_bar = np.zeros(STATE_DIMS)
+    mu_bar_prev = np.zeros(STATE_DIMS)
 
     # Ground truth.
-    mu_gt_prev = np.zeros((STATE_DIMS))
+    mu_gt_prev = np.zeros(STATE_DIMS)
 
     # Init history.
     mu_gt_h = mu_bar
