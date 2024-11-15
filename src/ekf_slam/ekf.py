@@ -4,7 +4,7 @@ import numpy as np
 
 from ekf_slam import DELTA_T, LM_DIMS, POSE_DIMS, N_LANDMARKS
 
-# Maps 3D pose space x_R [x  y  theta].T to the full EKF state space [x_R m].T.
+# Maps from 3D pose space [x  y  theta].T to the full EKF state space [x_R m].T.
 F_x = np.hstack((np.eye(POSE_DIMS), np.zeros((POSE_DIMS, LM_DIMS * N_LANDMARKS))))
 
 def g(u_t, mu, delta_t=DELTA_T, R=np.array([0., 0.])):
@@ -22,7 +22,7 @@ def g(u_t, mu, delta_t=DELTA_T, R=np.array([0., 0.])):
             Added to incoming translational and angular velocities.
             Default is zero noise.
     Returns:
-        Predicted state based on the current state and velocity command.
+        Predicted state based on the current state, time step, and velocity command.
         Shape == (STATE_DIMS,).
     """
     rng = np.random.default_rng()

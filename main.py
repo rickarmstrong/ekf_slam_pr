@@ -53,8 +53,6 @@ def main():
         mu_gt_prev = mu_gt
         mu_bar_prev = mu_bar
 
-#        time.sleep(0.1)
-
     plt.plot(mu_gt_h[:, 0], mu_gt_h[:, 1], '-b')
     plt.plot(mu_bar_h[:, 0], mu_bar_h[:, 1], '-k')
     plt.axis('square')
