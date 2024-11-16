@@ -2,14 +2,14 @@ from math import cos, sin
 
 import numpy as np
 
-from ekf_slam import DELTA_T, LM_DIMS, POSE_DIMS, N_LANDMARKS
+from ekf_slam import DELTA_T, LM_DIMS, POSE_DIMS, N_LANDMARKS, R_sim
 
 # Maps from 3D pose space [x  y  theta].T to the full EKF state space [x_R m].T.
 F_x = np.hstack((np.eye(POSE_DIMS), np.zeros((POSE_DIMS, LM_DIMS * N_LANDMARKS))))
 
-def g(u_t, mu, delta_t=DELTA_T, R=np.array([0., 0.])):
+def g(u_t, mu, delta_t=DELTA_T):
     """
-    Velocity motion model with optional additive zero-mean Gaussian noise.
+    Noise-free velocity motion model.
     Args:
         u_t : np.array
             Current control command: (v, theta). u_t.shape==(2,).
@@ -17,32 +17,51 @@ def g(u_t, mu, delta_t=DELTA_T, R=np.array([0., 0.])):
             Current (full) state vector. mu.shape==(STATE_DIMS,).
         delta_t : float, optional
             Time step for the prediction, in seconds.
-        R : np.array, optional
-            xy_velocity variance, theta variance, R.shape==(2,).
-            Added to incoming translational and angular velocities.
-            Default is zero noise.
     Returns:
         Predicted state based on the current state, time step, and velocity command.
         Shape == (STATE_DIMS,).
     """
-    rng = np.random.default_rng()
-    v_bar_t = u_t[0] + rng.normal(scale=R[0])
-    omega_bar_t = u_t[1] + rng.normal(scale=R[1])
+    v_t = u_t[0]
+    omega_t = u_t[1]
     theta = mu[2]
+
+    # The control command u_t represents a circular trajectory, whose radius
+    # is abs(v_t / omega_t). To reduce clutter we'll rename the signed ratio v/omega.
+    r_signed = v_t / omega_t
 
     # Pose delta.
     delta_x = np.array([
-        -(v_bar_t / omega_bar_t) * sin(theta) + (v_bar_t / omega_bar_t) * sin(theta + (omega_bar_t * delta_t)),
-        (v_bar_t / omega_bar_t) * cos(theta) - (v_bar_t / omega_bar_t) * cos(theta + (omega_bar_t * delta_t)),
-        omega_bar_t * delta_t])
+        -r_signed * sin(theta) + r_signed * sin(theta + (omega_t * delta_t)),
+        r_signed * cos(theta) - r_signed * cos(theta + (omega_t * delta_t)),
+        omega_t * delta_t])
 
     # Current (full) state + pose delta.
     return mu + F_x.T @ delta_x
 
 
-def get_vel_cmd():
-    # Constantly driving around in a big circle.
+def get_vel_cmd(R=np.array([0., 0.])):
+    rng = np.random.default_rng()
+
     v = 1.0  # [m/s]
     omega = 0.1  # [rad/s]
+
     u = np.array([v, omega])
-    return u
+    u_noisy =  rng.normal([v, omega], scale=R_sim)
+
+    return u, u_noisy
+
+
+def G(u_t, mu, delta_t=DELTA_T):
+    """Return the Jacobian of the motion model function g()."""
+    v_t = u_t[0]
+    omega_t = u_t[1]
+    theta = mu[2]
+
+    # The control command u_t represents a circular trajectory, whose radius
+    # is abs(v_t / omega_t). To reduce clutter we'll rename the signed ratio v/omega.
+    r_signed = v_t / omega_t
+
+    return np.array([
+        [1., 0., -r_signed * cos(theta) + r_signed * cos(theta + omega_t * delta_t )],
+        [0., 1., -r_signed * sin(theta) + r_signed * sin(theta + omega_t * delta_t)],
+        [0., 0., 1.]])

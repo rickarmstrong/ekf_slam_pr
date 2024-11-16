@@ -10,16 +10,8 @@ def test_g():
     """Minimal smoke test."""
     rng = np.random.default_rng()
     u_t = np.array([1.0, 0.1])  # Velocity command: v, theta.
-    mu_current = rng.normal(size=(POSE_DIMS + LM_DIMS * N_LANDMARKS, 1))
-    mu_next = g(u_t, mu_current)  # No added noise.
-    assert mu_current.shape == mu_next.shape
-
-
-    # # With some additive noise.
-    rng = np.random.default_rng()
-    u_t = np.array([1.0, 0.1])  # Velocity command: v, theta.
-    mu_current = rng.normal(size=(POSE_DIMS + LM_DIMS * N_LANDMARKS, 1))
-    mu_next = g(u_t, mu_current, R_sim)  # No added noise.
+    mu_current = rng.normal(size=(POSE_DIMS + LM_DIMS * N_LANDMARKS))
+    mu_next = g(u_t, mu_current)
     assert mu_current.shape == mu_next.shape
 
 def test_g_one_sec():
