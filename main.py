@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from ekf_slam import DELTA_T, N_LANDMARKS, POSE_DIMS, R_t, STATE_DIMS
-from ekf_slam.ekf import F_x, g, get_vel_cmd, G
+from ekf_slam.ekf import F_x, g, get_vel_cmd, G_t_full
 
 SIM_TIME = 40.0  # simulation time [s].
 MAX_RANGE = 20.0  # Maximum observation range.
@@ -48,7 +48,7 @@ def main():
         mu_bar = g(u_t_noisy, mu_bar_prev)  # Prediction of next state with some additive noise.
 
         # Update predicted covariance.
-        G_t = F_x.T @ G(u_t_noisy, mu_bar_prev) @ F_x
+        G_t = G_t_full(u_t_noisy, mu_bar_prev)
         S_bar = G_t @ S_bar_prev @ G_t.T + F_x.T @ R_t @ F_x
 
         # Store history for plotting.
