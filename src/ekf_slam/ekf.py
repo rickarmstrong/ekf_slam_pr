@@ -51,17 +51,6 @@ def get_vel_cmd(R=np.array([0., 0.])):
     return u, u_noisy
 
 
-def G_t_full(u_t, mu, delta_t=DELTA_T):
-    """Return the jacobian of the motion model, padded-out to the size of
-    the state covariance. This lets us transform only the motion portion
-    of the covariance, leaving the landmark portions untouched."""
-    G_x_t = G_t_x(u_t, mu, delta_t)
-    return np.block([
-        [G_x_t, np.zeros((POSE_DIMS, LM_DIMS * N_LANDMARKS))],
-        [np.zeros((LM_DIMS * N_LANDMARKS, POSE_DIMS)), np.eye((LM_DIMS * N_LANDMARKS))]
-    ])
-
-
 def G_t_x(u_t, mu, delta_t=DELTA_T):
     """Return the 3x3 Jacobian of the motion model function g()."""
     v_t = u_t[0]
@@ -73,6 +62,6 @@ def G_t_x(u_t, mu, delta_t=DELTA_T):
     r_signed = v_t / omega_t
 
     return np.array([
-        [1., 0., -r_signed * cos(theta) + r_signed * cos(theta + omega_t * delta_t )],
-        [0., 1., -r_signed * sin(theta) + r_signed * sin(theta + omega_t * delta_t)],
-        [0., 0., 1.]])
+        [0., 0., -r_signed * cos(theta) + r_signed * cos(theta + omega_t * delta_t )],
+        [0., 0., -r_signed * sin(theta) + r_signed * sin(theta + omega_t * delta_t)],
+        [0., 0., 0.]])

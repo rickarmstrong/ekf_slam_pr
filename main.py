@@ -8,14 +8,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from ekf_slam import DELTA_T, N_LANDMARKS, POSE_DIMS, R_t, STATE_DIMS
-from ekf_slam.ekf import F_x, g, get_vel_cmd, G_t_full
+from ekf_slam.ekf import F_x, g, get_vel_cmd, G_t_x
 
 SIM_TIME = 40.0  # simulation time [s].
-MAX_RANGE = 20.0  # Maximum observation range.
-M_DIST_TH = 2.0  # Threshold of Mahalanobis distance for data association.
+MAX_RANGE = 10.0  # Maximum observation range.
 
-# Initial robot pose and landmark ground truth: EKF SLAM can start from uninitialized landmark locations,
-# but we start with a fixed number of known locations for simplicity.
+# Initial robot pose and landmark ground truth.
 INITIAL_POSE = np.zeros((POSE_DIMS, 1))
 LANDMARKS = np.array([
     [10.0, -2.0],
@@ -48,7 +46,7 @@ def main():
         mu_bar = g(u_t_noisy, mu_bar_prev)  # Prediction of next state with some additive noise.
 
         # Update predicted covariance.
-        G_t = G_t_full(u_t_noisy, mu_bar_prev)
+        G_t = np.eye(STATE_DIMS) + F_x.T @ G_t_x(u_t_noisy, mu_bar_prev) @ F_x
         S_bar = G_t @ S_bar_prev @ G_t.T + F_x.T @ R_t @ F_x
 
         # Store history for plotting.
@@ -62,7 +60,8 @@ def main():
 
     plt.plot(mu_gt_h[:, 0], mu_gt_h[:, 1], '-b')
     plt.plot(mu_bar_h[:, 0], mu_bar_h[:, 1], '-k')
-    plt.axis('square')
+    plt.plot(LANDMARKS[:, 0], LANDMARKS[:, 1], 'b+')
+    plt.axis('equal')
     plt.grid(True)
     plt.show()
 
