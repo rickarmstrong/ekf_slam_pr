@@ -2,7 +2,7 @@ from math import cos, sin
 
 import numpy as np
 
-from ekf_slam import DELTA_T, LM_DIMS, POSE_DIMS, N_LANDMARKS, R_sim
+from ekf_slam import DELTA_T, LM_DIMS, POSE_DIMS, N_LANDMARKS
 
 # Maps from 3D pose space [x  y  theta].T to the full EKF state space [x_R m].T.
 F_x = np.hstack((np.eye(POSE_DIMS), np.zeros((POSE_DIMS, LM_DIMS * N_LANDMARKS))))
@@ -37,18 +37,6 @@ def g(u_t, mu, delta_t=DELTA_T):
 
     # Current (full) state + pose delta.
     return mu + F_x.T @ delta_x
-
-
-def get_vel_cmd(R=np.array([0., 0.])):
-    rng = np.random.default_rng()
-
-    v = 1.0  # [m/s]
-    omega = 0.1  # [rad/s]
-
-    u = np.array([v, omega])
-    u_noisy =  rng.normal([v, omega], scale=R_sim)
-
-    return u, u_noisy
 
 
 def G_t_x(u_t, mu, delta_t=DELTA_T):

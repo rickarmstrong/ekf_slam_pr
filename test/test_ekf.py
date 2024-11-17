@@ -3,7 +3,7 @@ from math import cos, sin
 
 import numpy as np
 
-from ekf_slam import LM_DIMS, N_LANDMARKS, POSE_DIMS, R_sim, STATE_DIMS
+from ekf_slam import LM_DIMS, N_LANDMARKS, POSE_DIMS, STATE_DIMS
 from ekf_slam.ekf import g
 
 def test_g():
@@ -25,3 +25,6 @@ def test_g_one_sec():
     x_1 = g(u_t, x_0, delta_t)
     assert np.isclose(x_1[0], sin(1.0))
     assert np.isclose(x_1[1], 1.0 - cos(1.0))
+
+def test_measure():
+    assert False, "Not yet implemented."
