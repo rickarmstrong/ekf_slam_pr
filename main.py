@@ -9,7 +9,7 @@ import numpy as np
 
 from ekf_slam import DELTA_T, N_LANDMARKS, POSE_DIMS, STATE_DIMS
 from ekf_slam.ekf import F_x, g, G_t_x
-from ekf_slam.sim import get_vel_cmd, measure, R_t
+from ekf_slam.sim import get_vel_cmd, measure, R_t, validate_landmarks
 
 SIM_TIME = 40.0  # simulation time [s].
 MAX_RANGE = 10.0  # Maximum observation range.
@@ -21,7 +21,7 @@ LANDMARKS = np.array([
     [15.0, 10.0],
     [3.0, 15.0],
     [-5.0, 20.0]])
-assert len(LANDMARKS) == N_LANDMARKS
+validate_landmarks(LANDMARKS)
 
 SHOW_PLOT = False
 

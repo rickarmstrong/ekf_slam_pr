@@ -28,3 +28,12 @@ def get_vel_cmd(R=np.array([0., 0.])):
 def measure(u_t, landmarks, max_range):
     z_t = np.zeros(LM_DIMS * N_LANDMARKS)
     return z_t
+
+
+def validate_landmarks(landmarks):
+    # Check assumptions about our fake landmarks.
+    assert len(landmarks) == N_LANDMARKS
+    for landmark in landmarks:
+        # Landmarks are initialized to (0, 0), in the state vector, so
+        # no landmarks at the origin.
+        assert np.all(np.not_equal(landmark, np.array([0., 0.])))
