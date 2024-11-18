@@ -9,10 +9,7 @@ import numpy as np
 
 from ekf_slam import DELTA_T, N_LANDMARKS, POSE_DIMS, STATE_DIMS
 from ekf_slam.ekf import F_x, g, G_t_x
-from ekf_slam.sim import get_vel_cmd, measure, R_t, validate_landmarks
-
-SIM_TIME = 40.0  # simulation time [s].
-MAX_RANGE = 10.0  # Maximum observation range.
+from ekf_slam.sim import get_vel_cmd, MAX_RANGE, measure, R_t, validate_landmarks
 
 # Initial robot pose and landmark ground truth.
 INITIAL_POSE = np.zeros((POSE_DIMS, 1))

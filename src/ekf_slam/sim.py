@@ -2,6 +2,10 @@ import numpy as np
 
 from ekf_slam import LM_DIMS, N_LANDMARKS
 
+SIM_TIME = 40.0  # simulation time [s].
+MAX_RANGE = 10.0  # Maximum observation range.
+
+
 # Simulated velocity command noise params. stdev of velocity and angular rate noise.
 R_sim = np.array([1.0, np.deg2rad(10.0)])
 
@@ -23,6 +27,25 @@ def get_vel_cmd(R=np.array([0., 0.])):
     u_noisy =  rng.normal([v, omega], scale=R_sim)
 
     return u, u_noisy
+
+def in_range(x, landmarks, max_range=MAX_RANGE):
+    """
+    Return a
+    Args:
+        x:
+        landmarks:
+        max_range:
+
+    Returns:
+
+    """
+    idx = []
+    lir = []  # Landmarks in range.
+    for j, lm in enumerate(landmarks):
+        if np.linalg.norm(lm - x) <= max_range:
+            idx.append(j)
+            lir.append(lm)
+    return idx, np.array(lir)
 
 
 def measure(u_t, landmarks, max_range):
