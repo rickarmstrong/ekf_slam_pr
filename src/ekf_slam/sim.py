@@ -28,24 +28,24 @@ def get_vel_cmd(R=np.array([0., 0.])):
 
     return u, u_noisy
 
-def in_range(x, landmarks, max_range=MAX_RANGE):
+def in_range(pose_xy, landmarks, max_range=MAX_RANGE):
     """
-    Return a
+    Return a list of landmark indices corresponding to landmarks that are
+    within range of pose.
     Args:
-        x:
-        landmarks:
-        max_range:
-
-    Returns:
-
+        x : array_like
+            2D pose, where pose[0] is x, and pose[1] is y.
+        landmarks : np.array
+            landmarks.shape == (n, 2), where n is the number of 2D landmarks.
+        max_range : float
+            Distance threshold.
+    Returns: a list of indices from the incoming array of landmarks that are in range.
     """
     idx = []
-    lir = []  # Landmarks in range.
     for j, lm in enumerate(landmarks):
-        if np.linalg.norm(lm - x) <= max_range:
+        if np.linalg.norm(lm - pose_xy) <= max_range:
             idx.append(j)
-            lir.append(lm)
-    return idx, np.array(lir)
+    return idx
 
 
 def measure(u_t, landmarks, max_range):

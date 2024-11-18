@@ -35,8 +35,8 @@ def test_in_range():
         [0., 1.]
     ])
     x = np.array([0., 0.])
-    idx, landmarks = in_range(x, landmarks, 1.0)
-    assert np.allclose(landmarks, np.array([
+    j = in_range(x, landmarks, 1.0)
+    assert np.allclose(landmarks[j], np.array([
         [1., 0.],
         [0., 1.]
     ]))
