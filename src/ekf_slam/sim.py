@@ -5,6 +5,9 @@ from ekf_slam import LM_DIMS, N_LANDMARKS
 SIM_TIME = 40.0  # simulation time [s].
 MAX_RANGE = 10.0  # Maximum observation range.
 
+# Simulated measurement noise params. stdev of range and bearing measurements noise.
+Q_sim = np.array([0.1, np.deg2rad(10.0)])
+
 
 # Simulated velocity command noise params. stdev of velocity and angular rate noise.
 R_sim = np.array([1.0, np.deg2rad(10.0)])
@@ -17,40 +20,63 @@ R_sim = np.array([1.0, np.deg2rad(10.0)])
 R_t = np.diag([0.1, 0.1, 0.01])
 
 
-def get_vel_cmd(R=np.array([0., 0.])):
+def get_vel_cmd(R=R_sim):
     rng = np.random.default_rng()
 
     v = 1.0  # [m/s]
     omega = 0.1  # [rad/s]
 
     u = np.array([v, omega])
-    u_noisy =  rng.normal([v, omega], scale=R_sim)
+    u_noisy =  rng.normal([v, omega], scale=R)
 
     return u, u_noisy
 
-def in_range(pose_xy, landmarks, max_range=MAX_RANGE):
+def in_range(x_t, landmarks, max_range=MAX_RANGE):
     """
     Return a list of landmark indices corresponding to landmarks that are
     within range of pose.
     Args:
-        x : array_like
-            2D pose, where pose[0] is x, and pose[1] is y.
+        x_t : np.array
+            2D pose: (x, y). shape == (2,).
         landmarks : np.array
             landmarks.shape == (n, 2), where n is the number of 2D landmarks.
         max_range : float
             Distance threshold.
     Returns: a list of indices from the incoming array of landmarks that are in range.
     """
+    assert x_t.shape == (2,)  # 2D pose.
     idx = []
     for j, lm in enumerate(landmarks):
-        if np.linalg.norm(lm - pose_xy) <= max_range:
+        if np.linalg.norm(lm - x_t) <= max_range:
             idx.append(j)
     return idx
 
 
-def measure(u_t, landmarks, max_range):
-    z_t = np.zeros(LM_DIMS * N_LANDMARKS)
-    return z_t
+def measure(x_t, landmarks, max_range, Q=Q_sim):
+    """
+    Return a list of simulated landmark observations.
+    Args:
+        x_t : array-like
+            2D pose: (x, y, theta).
+        landmarks :
+            landmarks.shape == (n, 2), where n is the number of 2D landmarks.
+        max_range :
+        Q:
+
+    Returns:
+        j_i: Indices of landmarks in-range.
+        z_i: An (optionally noise-corrupted) range-bearing measurement (r, theta)
+        of each landmark that is within range, or None if no landmarks are in range.
+    """
+    z_i = []
+    j_i = in_range(x_t[:2], landmarks, max_range)
+    for j in j_i:
+        lm = landmarks[j]
+        z_cart = lm - x_t[:2]  # Vector from sensor to landmark.
+        r = np.linalg.norm(z_cart)
+        theta = np.atan2(z_cart[1], z_cart[0])
+        z_i.append(np.array([r, theta]))
+    return j_i, z_i
 
 
 def validate_landmarks(landmarks):

@@ -41,7 +41,51 @@ def test_in_range():
         [0., 1.]
     ]))
 
-def test_measure():
+def test_measure_zero_noise():
+    # x, y, theta: at origin, looking down the x-axis.
+    x_t = np.array([0., 0., 0.])
+
+    # Two landmarks in-range, one out.
+    max_range = 1.0
+    landmarks  = np.array([
+        [1., 0.],
+        [2., 2.],  # Out of range.
+        [0., 1.]
+    ])
+
+    j, z_i_t = measure(x_t, landmarks, max_range)
+    expected = np.array([
+        [1., 0.],
+        [1., np.pi / 2.]
+    ])
+    assert np.allclose(np.array(z_i_t), expected)
+
+    # All landmarks out-of-range.
+    max_range = 0.1
+    j, z_i_t = measure(x_t, landmarks, max_range)
+    assert len(j) == 0.
+    assert len(z_i_t) == 0.
+
+def test_measure_noisy():
     assert False, "Not yet implemented."
 
-
+    # # x, y, theta: at origin, looking up the y-axis.
+    # x_t = np.array([0., 0., np.pi / 2.])
+    #
+    # # Two landmarks in-range, one out.
+    # max_range = 2.0
+    # landmarks  = np.array([
+    #     [1., 0.],
+    #     [2., 2.],  # Out of range.
+    #     [0., 1.]
+    # ])
+    #
+    # # Take a bunch of measurements and verify that the statistics make sense.
+    # N = 100
+    # z_t = {}  # Entries look like {landmark_id: [measurements]}.
+    # for i in range(N):
+    #     j, z = measure(x_t, landmarks, max_range)
+    #     try:
+    #         z_t[j].append(z)
+    #     except KeyError:
+    #         z_t[j] = [z]  # First sighting.
