@@ -46,14 +46,13 @@ def test_measure_zero_noise():
     x_t = np.array([0., 0., 0.])
 
     # Two landmarks in-range, one out.
-    max_range = 1.0
     landmarks  = np.array([
         [1., 0.],
         [2., 2.],  # Out of range.
         [0., 1.]
     ])
 
-    j, z_i_t = measure(x_t, landmarks, max_range)
+    j_i, z_i_t = measure(x_t, landmarks, max_range=1.0)
     expected = np.array([
         [1., 0.],
         [1., np.pi / 2.]
@@ -61,10 +60,10 @@ def test_measure_zero_noise():
     assert np.allclose(np.array(z_i_t), expected)
 
     # All landmarks out-of-range.
-    max_range = 0.1
-    j, z_i_t = measure(x_t, landmarks, max_range)
-    assert len(j) == 0.
+    j_i, z_i_t = measure(x_t, landmarks, max_range=0.1)
+    assert len(j_i) == 0.
     assert len(z_i_t) == 0.
+
 
 def test_measure_noisy():
     assert False, "Not yet implemented."

@@ -17,6 +17,8 @@ R_sim = np.array([1.0, np.deg2rad(10.0)])
 # discussed here:
 # https://github.com/cra-ros-pkg/robot_localization/blob/ef0a27352962c56a970f2bbeb8687313b9e54a9a/src/filter_base.cpp#L132.
 # If this were a real robot, it might matter, but for the purpose of simulation, we just cheat.
+# Note: we assume a Unicycle model, which means there's never a y-component to our velocity
+# in the robot frame. We make noise in y much smaller than in x.
 R_t = np.diag([0.1, 0.1, 0.01])
 
 
@@ -61,12 +63,14 @@ def measure(x_t, landmarks, max_range, Q=Q_sim):
         landmarks :
             landmarks.shape == (n, 2), where n is the number of 2D landmarks.
         max_range :
-        Q:
+        Q : array-like
+            Noise params for range, bearing.
 
     Returns:
         j_i: Indices of landmarks in-range.
         z_i: An (optionally noise-corrupted) range-bearing measurement (r, theta)
-        of each landmark that is within range, or None if no landmarks are in range.
+            of each landmark that is within range, or None if no landmarks are in range.
+            theta is in the range [-pi, pi].
     """
     z_i = []
     j_i = in_range(x_t[:2], landmarks, max_range)
