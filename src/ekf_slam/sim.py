@@ -6,7 +6,7 @@ SIM_TIME = 40.0  # simulation time [s].
 MAX_RANGE = 10.0  # Maximum observation range.
 
 # Simulated measurement noise params. stdev of range and bearing measurements noise.
-Q_sim = np.array([0.1, np.deg2rad(10.0)])
+Q_sim = np.array([0.05, np.deg2rad(2.5)])
 
 
 # Simulated velocity command noise params. stdev of velocity and angular rate noise.
@@ -72,13 +72,17 @@ def measure(x_t, landmarks, max_range, Q=Q_sim):
             of each landmark that is within range, or None if no landmarks are in range.
             theta is in the range [-pi, pi].
     """
+    rng = np.random.default_rng()
     z_i = []
     j_i = in_range(x_t[:2], landmarks, max_range)
     for j in j_i:
         lm = landmarks[j]
-        z_cart = lm - x_t[:2]  # Vector from sensor to landmark.
-        r = np.linalg.norm(z_cart)
-        theta = np.atan2(z_cart[1], z_cart[0])
+        v_sensor_lm = lm - x_t[:2]  # Vector from sensor to landmark.
+
+        # Calculate range, bearing, add sim noise.
+        r = np.linalg.norm(v_sensor_lm) + rng.normal(scale=Q[0])
+        theta = np.atan2(v_sensor_lm[1], v_sensor_lm[0]) + rng.normal(scale=Q[1])
+
         z_i.append(np.array([r, theta]))
     return j_i, z_i
 

@@ -1,5 +1,6 @@
 from math import cos, sin
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from ekf_slam import LM_DIMS, N_LANDMARKS, POSE_DIMS, STATE_DIMS
@@ -52,7 +53,7 @@ def test_measure_zero_noise():
         [0., 1.]
     ])
 
-    j_i, z_i_t = measure(x_t, landmarks, max_range=1.0)
+    j_i, z_i_t = measure(x_t, landmarks, max_range=1.0, Q=np.zeros(2))
     expected = np.array([
         [1., 0.],
         [1., np.pi / 2.]
@@ -60,31 +61,42 @@ def test_measure_zero_noise():
     assert np.allclose(np.array(z_i_t), expected)
 
     # All landmarks out-of-range.
-    j_i, z_i_t = measure(x_t, landmarks, max_range=0.1)
+    j_i, z_i_t = measure(x_t, landmarks, max_range=0.1,Q=np.zeros(2))
     assert len(j_i) == 0.
     assert len(z_i_t) == 0.
 
 
 def test_measure_noisy():
-    assert False, "Not yet implemented."
 
-    # # x, y, theta: at origin, looking up the y-axis.
-    # x_t = np.array([0., 0., np.pi / 2.])
-    #
-    # # Two landmarks in-range, one out.
-    # max_range = 2.0
-    # landmarks  = np.array([
-    #     [1., 0.],
-    #     [2., 2.],  # Out of range.
-    #     [0., 1.]
-    # ])
-    #
-    # # Take a bunch of measurements and verify that the statistics make sense.
-    # N = 100
-    # z_t = {}  # Entries look like {landmark_id: [measurements]}.
-    # for i in range(N):
-    #     j, z = measure(x_t, landmarks, max_range)
-    #     try:
-    #         z_t[j].append(z)
-    #     except KeyError:
-    #         z_t[j] = [z]  # First sighting.
+    # x, y, theta: at origin, looking up the y-axis.
+    x_t = np.array([0., 0., np.pi / 2.])
+
+    # Two landmarks in-range, one out.
+    max_range = 2.0
+    landmarks  = np.array([
+        [1., 0.],
+        [2., 2.],  # Out of range.
+        [0., 1.]
+    ])
+
+    # Take a bunch of measurements and verify that the statistics make sense.
+    N = 100
+    z_t = {}  # Entries look like {landmark_id: [measurements]}.
+    for k in range(N):
+        jj, zz = measure(x_t, landmarks, max_range)
+        for j, z in zip(jj, zz):
+            try:
+                z_t[j].append(z)
+            except KeyError:
+                z_t[j] = [z]  # First sighting.
+
+    # Plot the observations.
+    if True:
+        for j in z_t.keys():
+            for obs in np.array(z_t[j]):
+                r = obs[0]
+                theta = obs[1]
+                x = r * cos(theta)
+                y = r * sin(theta)
+                plt.plot(x, y, '.b')
+        plt.show()
