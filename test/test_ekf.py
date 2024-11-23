@@ -3,9 +3,9 @@ from math import cos, sin
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ekf_slam import LM_DIMS, N_LANDMARKS, POSE_DIMS, STATE_DIMS
+from ekf_slam import LM_DIMS, N_LANDMARKS, POSE_DIMS, STATE_DIMS, jj
 from ekf_slam.ekf import g
-from ekf_slam.sim import in_range, measure
+from ekf_slam.sim import in_range, get_expected_measurement, get_measurements
 
 def test_g():
     """Minimal smoke test."""
@@ -14,6 +14,33 @@ def test_g():
     mu_current = rng.normal(size=(POSE_DIMS + LM_DIMS * N_LANDMARKS))
     mu_next = g(u_t, mu_current)
     assert mu_current.shape == mu_next.shape
+
+
+def test_get_expected_measurement():
+    # State vector representing a robot and two landmarks.
+    n_landmarks = 2
+    mu_t = np.zeros(POSE_DIMS + 2 * LM_DIMS)
+
+    # Robot at (1, 0), looking down the x-axis.
+    x = np.array([1., 0., 0.])  # x, y, theta.
+    mu_t[:3] = x
+
+    # Landmarks: one at "nine o'clock", relative to the robot,
+    # another straight behind the robot.
+    landmarks = np.array([
+        [1., 1.],
+        [-1., 0.]
+    ])
+    mu_t[jj(0): jj(0) + LM_DIMS] = landmarks[0]
+    mu_t[jj(1): jj(1) + LM_DIMS] = landmarks[1]
+
+    expected_measurements = np.array([
+        [1., np.pi / 2.],
+        [2., np.pi]
+    ])
+    for j in range(n_landmarks):
+        z_hat = get_expected_measurement(mu_t, j)
+        assert np.allclose(z_hat, expected_measurements[j])
 
 
 def test_g_one_sec():
@@ -53,7 +80,7 @@ def test_measure_zero_noise():
         [0., 1.]
     ])
 
-    j_i, z_i_t = measure(x_t, landmarks, max_range=1.0, Q=np.zeros(2))
+    j_i, z_i_t = get_measurements(x_t, landmarks, max_range=1.0, Q=np.zeros(2))
     expected = np.array([
         [1., 0.],
         [1., np.pi / 2.]
@@ -61,7 +88,7 @@ def test_measure_zero_noise():
     assert np.allclose(np.array(z_i_t), expected)
 
     # All landmarks out-of-range.
-    j_i, z_i_t = measure(x_t, landmarks, max_range=0.1,Q=np.zeros(2))
+    j_i, z_i_t = get_measurements(x_t, landmarks, max_range=0.1, Q=np.zeros(2))
     assert len(j_i) == 0.
     assert len(z_i_t) == 0.
 
@@ -83,7 +110,7 @@ def test_measure_noisy():
     N = 100
     z_t = {}  # Entries look like {landmark_id: [measurements]}.
     for k in range(N):
-        jj, zz = measure(x_t, landmarks, max_range)
+        jj, zz = get_measurements(x_t, landmarks, max_range)
         for j, z in zip(jj, zz):
             try:
                 z_t[j].append(z)

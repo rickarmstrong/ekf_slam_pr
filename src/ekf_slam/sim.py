@@ -1,6 +1,6 @@
 import numpy as np
 
-from ekf_slam import LM_DIMS, N_LANDMARKS
+from ekf_slam import LM_DIMS, N_LANDMARKS, jj
 
 SIM_TIME = 40.0  # simulation time [s].
 MAX_RANGE = 10.0  # Maximum observation range.
@@ -54,7 +54,26 @@ def in_range(x_t, landmarks, max_range=MAX_RANGE):
     return idx
 
 
-def measure(x_t, landmarks, max_range, Q=Q_sim):
+def get_expected_measurement(mu_t, j):
+    """
+    Return the expected measurement (range, bearing) for landmark j, and current
+        position estimate, taken from the current full state vector.
+    Args:
+        mu_t : np.array
+            shape == (STATE_DIMS,).
+        j : int
+            The landmark index.
+    Returns:
+        The expected range/bearing of the landmark.
+    """
+    x_t = mu_t[:2]
+    lm = mu_t[jj(j): jj(j) + LM_DIMS]
+    v = lm - x_t
+
+    # r, phi.
+    return np.array([np.linalg.norm(v), np.atan2(v[1], v[0])])
+
+def get_measurements(x_t, landmarks, max_range, Q=Q_sim):
     """
     Return a list of simulated landmark observations.
     Args:
@@ -68,9 +87,9 @@ def measure(x_t, landmarks, max_range, Q=Q_sim):
 
     Returns:
         j_i: Indices of landmarks in-range.
-        z_i: An (optionally noise-corrupted) range-bearing measurement (r, theta)
+        z_i: An (optionally noise-corrupted) range-bearing measurement (r, phi)
             of each landmark that is within range, or None if no landmarks are in range.
-            theta is in the range [-pi, pi].
+            phi is in the range [-pi, pi]. Measurement is expressed in the robot frame.
     """
     rng = np.random.default_rng()
     z_i = []
@@ -81,9 +100,8 @@ def measure(x_t, landmarks, max_range, Q=Q_sim):
 
         # Calculate range, bearing, add sim noise.
         r = np.linalg.norm(v_sensor_lm) + rng.normal(scale=Q[0])
-        theta = np.atan2(v_sensor_lm[1], v_sensor_lm[0]) + rng.normal(scale=Q[1])
-
-        z_i.append(np.array([r, theta]))
+        phi = np.atan2(v_sensor_lm[1], v_sensor_lm[0]) + rng.normal(scale=Q[1])
+        z_i.append(np.array([r, phi]))
     return j_i, z_i
 
 

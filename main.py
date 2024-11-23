@@ -9,7 +9,7 @@ import numpy as np
 
 from ekf_slam import DELTA_T, POSE_DIMS, STATE_DIMS
 from ekf_slam.ekf import F_x, g, G_t_x
-from ekf_slam.sim import get_vel_cmd, MAX_RANGE, measure, R_t, SIM_TIME, validate_landmarks
+from ekf_slam.sim import get_vel_cmd, MAX_RANGE, get_measurements, R_t, SIM_TIME, validate_landmarks
 
 # Initial robot pose and landmark ground truth.
 INITIAL_POSE = np.zeros((POSE_DIMS, 1))
@@ -49,7 +49,7 @@ def main():
         S_bar = G_t @ S_bar_prev @ G_t.T + F_x.T @ R_t @ F_x
 
         ### Observe. ###
-        z_t = measure(u_t, LANDMARKS, MAX_RANGE)
+        z_t = get_measurements(mu_gt, LANDMARKS, MAX_RANGE)
 
         ### Correct. ###
 
@@ -65,7 +65,7 @@ def main():
 
     plt.plot(mu_gt_h[:, 0], mu_gt_h[:, 1], '-b')
     plt.plot(mu_bar_h[:, 0], mu_bar_h[:, 1], '-k')
-    plt.plot(LANDMARKS[:, 0], LANDMARKS[:, 1], 'b+')
+    plt.plot(LANDMARKS[:, 0], LANDMARKS[:, 1], 'xr')
     plt.axis('equal')
     plt.grid(True)
     plt.show()
