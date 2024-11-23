@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from ekf_slam import LM_DIMS, N_LANDMARKS, POSE_DIMS, STATE_DIMS, jj
-from ekf_slam.ekf import g
+from ekf_slam.ekf import g, init_landmark
 from ekf_slam.sim import in_range, get_expected_measurement, get_measurements
 
 def test_g():
@@ -54,6 +54,32 @@ def test_g_one_sec():
     x_1 = g(u_t, x_0, delta_t)
     assert np.isclose(x_1[0], sin(1.0))
     assert np.isclose(x_1[1], 1.0 - cos(1.0))
+
+
+def test_init_landmark():
+    # State vector representing a robot and two landmarks.
+    mu_t = np.zeros(POSE_DIMS + 2 * LM_DIMS)
+
+    # Robot at (1, 0), looking down the x-axis.
+    x = np.array([1., 0., 0.])  # x, y, theta.
+    mu_t[:3] = x
+
+    # Landmarks: one at "nine o'clock", relative to the robot,
+    # another straight behind the robot.
+    landmarks = np.array([
+        [1., 1.],
+        [-1., 0.]
+    ])
+
+    # Robot-frame range-bearing measurements corresponding to the landmarks.
+    z_t = np.array([
+        [1., np.pi / 2.],
+        [2., np.pi]
+    ])
+
+    for j, z in enumerate(z_t):
+        init_landmark(mu_t, j, z)
+        assert np.allclose(mu_t[jj(j): jj(j) + LM_DIMS], landmarks[j])
 
 
 def test_in_range():

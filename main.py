@@ -7,8 +7,8 @@ https://github.com/AtsushiSakai/PythonRobotics/tree/master/SLAM/EKFSLAM
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ekf_slam import DELTA_T, POSE_DIMS, STATE_DIMS
-from ekf_slam.ekf import F_x, g, G_t_x
+from ekf_slam import DELTA_T, POSE_DIMS, STATE_DIMS, LM_DIMS, jj
+from ekf_slam.ekf import F_x, g, G_t_x, init_landmark
 from ekf_slam.sim import get_vel_cmd, MAX_RANGE, get_measurements, R_t, SIM_TIME, validate_landmarks
 
 # Initial robot pose and landmark ground truth.
@@ -49,10 +49,12 @@ def main():
         S_bar = G_t @ S_bar_prev @ G_t.T + F_x.T @ R_t @ F_x
 
         ### Observe. ###
-        z_t = get_measurements(mu_gt, LANDMARKS, MAX_RANGE)
+        j_i, z_i = get_measurements(mu_gt, LANDMARKS, MAX_RANGE)
 
         ### Correct. ###
-
+        for j, z in zip(j_i, z_i):
+            if np.allclose(mu_bar[jj(j): jj(j) + LM_DIMS], np.zeros(2)):
+                init_landmark(mu_bar, j, z)
 
         # Store history for plotting.
         mu_gt_h = np.vstack((mu_gt_h, mu_gt))

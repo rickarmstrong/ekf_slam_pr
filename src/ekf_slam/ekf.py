@@ -2,7 +2,7 @@ from math import cos, sin
 
 import numpy as np
 
-from ekf_slam import DELTA_T, LM_DIMS, POSE_DIMS, N_LANDMARKS
+from ekf_slam import DELTA_T, LM_DIMS, POSE_DIMS, N_LANDMARKS, jj
 
 # Maps from 3D pose space [x  y  theta].T to the full EKF state space [x_R m].T.
 F_x = np.hstack((np.eye(POSE_DIMS), np.zeros((POSE_DIMS, LM_DIMS * N_LANDMARKS))))
@@ -53,3 +53,24 @@ def G_t_x(u_t, mu, delta_t=DELTA_T):
         [0., 0., -r_signed * cos(theta) + r_signed * cos(theta + omega_t * delta_t )],
         [0., 0., -r_signed * sin(theta) + r_signed * sin(theta + omega_t * delta_t)],
         [0., 0., 0.]])
+
+def init_landmark(mu_t, j, z):
+    """
+    Set the map-frame position of landmark j in mu_t to match the
+    range-bearing measurement z.
+    Args:
+        mu_t : np.array
+            State vector.
+        j : int
+            Index of the landmark we wish to update.
+        z : np.array
+            Range, bearing from the robot frame to the landmark. shape == (2,).
+
+    Returns: None. Mutates the jth landmark in mu_t with the map-frame location of
+    the observed landmark, based on the current robot pose.
+    """
+    x, y, theta = mu_t[:POSE_DIMS]
+    r, phi = z
+    mu_t[jj(j): jj(j) + LM_DIMS] = np.array([
+        x + r * cos(phi + theta),
+        y + r * sin(phi + theta)])

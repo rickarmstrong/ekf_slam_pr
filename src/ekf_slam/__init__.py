@@ -8,4 +8,6 @@ STATE_DIMS = POSE_DIMS + LM_DIMS * N_LANDMARKS
 
 # Landmark indexing helper.
 def jj(j):
+    """Return the index of the first element of the jth landmark
+     in a full state vector."""
     return POSE_DIMS + 2 * j
