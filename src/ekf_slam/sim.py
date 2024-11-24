@@ -54,25 +54,6 @@ def in_range(x_t, landmarks, max_range=MAX_RANGE):
     return idx
 
 
-def get_expected_measurement(mu_t, j):
-    """
-    Return the expected measurement (range, bearing) for landmark j, and current
-        position estimate, taken from the current full state vector.
-    Args:
-        mu_t : np.array
-            shape == (STATE_DIMS,).
-        j : int
-            The landmark index.
-    Returns:
-        The expected range/bearing of the landmark.
-    """
-    x_t = mu_t[:2]
-    lm = mu_t[jj(j): jj(j) + LM_DIMS]
-    v = lm - x_t
-
-    # r, phi.
-    return np.array([np.linalg.norm(v), np.atan2(v[1], v[0])])
-
 def get_measurements(x_t, landmarks, max_range, Q=Q_sim):
     """
     Return a list of simulated landmark observations.
@@ -80,7 +61,7 @@ def get_measurements(x_t, landmarks, max_range, Q=Q_sim):
         x_t : array-like
             2D pose: (x, y, theta).
         landmarks :
-            landmarks.shape == (n, 2), where n is the number of 2D landmarks.
+            Ground-truth landmarks. shape == (n, 2), where n is the number of 2D landmarks.
         max_range :
         Q : array-like
             Noise params for range, bearing.

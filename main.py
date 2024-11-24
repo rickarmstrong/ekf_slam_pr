@@ -7,8 +7,8 @@ https://github.com/AtsushiSakai/PythonRobotics/tree/master/SLAM/EKFSLAM
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ekf_slam import DELTA_T, POSE_DIMS, STATE_DIMS, LM_DIMS, jj
-from ekf_slam.ekf import F_x, g, G_t_x, init_landmark
+from ekf_slam import DELTA_T, N_LANDMARKS, POSE_DIMS, STATE_DIMS, LM_DIMS, jj, get_landmark
+from ekf_slam.ekf import F_x, g, G_t_x, get_expected_measurement, init_landmark
 from ekf_slam.sim import get_vel_cmd, MAX_RANGE, get_measurements, R_t, SIM_TIME, validate_landmarks
 
 # Initial robot pose and landmark ground truth.
@@ -53,8 +53,14 @@ def main():
 
         ### Correct. ###
         for j, z in zip(j_i, z_i):
-            if np.allclose(mu_bar[jj(j): jj(j) + LM_DIMS], np.zeros(2)):
+            if np.allclose(get_landmark(mu_bar, j), np.zeros(2)):
                 init_landmark(mu_bar, j, z)
+
+            d = get_landmark(mu_bar, j) - mu_bar[:2]
+            q = np.inner(d.T, d)
+            z_hat = np.array([
+                np.sqrt(q),
+                np.atan2(d[1], d[0] - mu_bar[2])])
 
         # Store history for plotting.
         mu_gt_h = np.vstack((mu_gt_h, mu_gt))
@@ -65,9 +71,20 @@ def main():
         mu_gt_prev = mu_gt
         mu_bar_prev = mu_bar
 
+    # Ground-truth positions.
     plt.plot(mu_gt_h[:, 0], mu_gt_h[:, 1], '-b')
-    plt.plot(mu_bar_h[:, 0], mu_bar_h[:, 1], '-k')
-    plt.plot(LANDMARKS[:, 0], LANDMARKS[:, 1], 'xr')
+
+    # Position estimates.
+    plt.plot(mu_bar_h[:, 0], mu_bar_h[:, 1], '-r')
+
+    # Ground-truth landmark positions.
+    plt.plot(LANDMARKS[:, 0], LANDMARKS[:, 1], 'xb')
+
+    # Landmark estimates.
+    for j in range(N_LANDMARKS):
+        lm = get_landmark(mu_bar, j)
+        plt.plot(lm[0], lm[1], 'or')
+
     plt.axis('equal')
     plt.grid(True)
     plt.show()

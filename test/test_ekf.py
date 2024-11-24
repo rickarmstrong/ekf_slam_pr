@@ -4,8 +4,39 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from ekf_slam import LM_DIMS, N_LANDMARKS, POSE_DIMS, STATE_DIMS, jj
-from ekf_slam.ekf import g, init_landmark
-from ekf_slam.sim import in_range, get_expected_measurement, get_measurements
+from ekf_slam.ekf import F_x_j, g, get_expected_measurement, init_landmark
+from ekf_slam.sim import in_range, get_measurements
+
+def test_F_x_j():
+    Fxj = F_x_j(0)
+    Fxj_expected = np.array([
+        [1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+        [0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+        [0., 0., 1., 0., 0., 0., 0., 0., 0., 0., 0.],
+        [0., 0., 0., 1., 0., 0., 0., 0., 0., 0., 0.],
+        [0., 0., 0., 0., 1., 0., 0., 0., 0., 0., 0.],
+    ])
+    assert np.allclose(Fxj, Fxj_expected)
+
+    Fxj = F_x_j(1)
+    Fxj_expected = np.array([
+        [1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+        [0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+        [0., 0., 1., 0., 0., 0., 0., 0., 0., 0., 0.],
+        [0., 0., 0., 0., 0., 1., 0., 0., 0., 0., 0.],
+        [0., 0., 0., 0., 0., 0., 1., 0., 0., 0., 0.],
+    ])
+    assert np.allclose(Fxj, Fxj_expected)
+
+    Fxj = F_x_j(3)
+    Fxj_expected = np.array([
+        [1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+        [0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+        [0., 0., 1., 0., 0., 0., 0., 0., 0., 0., 0.],
+        [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1.],
+    ])
+    assert np.allclose(Fxj, Fxj_expected)
 
 def test_g():
     """Minimal smoke test."""

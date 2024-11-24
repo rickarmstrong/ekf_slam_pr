@@ -4,8 +4,45 @@ import numpy as np
 
 from ekf_slam import DELTA_T, LM_DIMS, POSE_DIMS, N_LANDMARKS, jj
 
-# Maps from 3D pose space [x  y  theta].T to the full EKF state space [x_R m].T.
+# Maps from 3D pose space [x  y  theta].T to the full EKF state space [x_R m].T, shape == (2N+3,)
 F_x = np.hstack((np.eye(POSE_DIMS), np.zeros((POSE_DIMS, LM_DIMS * N_LANDMARKS))))
+
+def F_x_j(j):
+    """Build a matrix that maps the 2x5 jacobian of the measurement function to the
+    full EKF covariance space (2N+3 x 2N+3).
+
+    See http://ais.informatik.uni-freiburg.de/teaching/ws13/mapping/pdf/slam05-ekf-slam.pdf. Note: Stachniss' description
+    of EKF SLAM drops the "signature" of measurements, for clarity. Consequently, the dimensions of this matrix
+    (and others) differ from Table 10.1 in the Thrun book.
+    Args:
+        j : int
+            Zero-based landmark index.
+    Returns:
+        F : np.array.shape == (2N+3, 2N+3).
+    """
+    # We use zero-based indices everywhere, but Thrun et al use one-based landmark indices, like normal people.
+    # For this purpose, it's useful to use one-based landmark indices, to match the literature.
+    jn = j + 1
+
+    # Build left-to-right.
+    F = np.block([
+        [np.eye(3)],
+        [np.zeros((2, 3))]
+    ])
+
+    # Add first padding block, if needed.
+    if jn > 1:
+        pad_1 = np.zeros((5, 2*jn - 2))
+        F = np.hstack((F, pad_1))
+
+    # These columns select the landmark of interest.
+    selector = np.vstack((np.zeros((3, 2)), np.eye(2)))
+    F = np.hstack((F, selector))
+
+    # Add the final padding.
+    pad_2 = np.zeros((5, 2*N_LANDMARKS - 2*jn))
+    F = np.hstack((F, pad_2))
+    return F
 
 def g(u_t, mu, delta_t=DELTA_T):
     """
@@ -37,6 +74,26 @@ def g(u_t, mu, delta_t=DELTA_T):
 
     # Current (full) state + pose delta.
     return mu + F_x.T @ delta_x
+
+
+def get_expected_measurement(mu_t, j):
+    """
+    Return the expected measurement (range, bearing) for estimated landmark j,
+    and current position estimate, taken from the current full state vector.
+    Args:
+        mu_t : np.array
+            shape == (STATE_DIMS,).
+        j : int
+            The landmark index.
+    Returns:
+        The expected range/bearing of the landmark.
+    """
+    x_t = mu_t[:2]
+    lm_bar = mu_t[jj(j): jj(j) + LM_DIMS]
+    v = lm_bar - x_t
+
+    # r, phi.
+    return np.array([np.linalg.norm(v), np.atan2(v[1], v[0])])
 
 
 def G_t_x(u_t, mu, delta_t=DELTA_T):
