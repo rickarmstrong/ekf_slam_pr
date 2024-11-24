@@ -111,6 +111,16 @@ def G_t_x(u_t, mu, delta_t=DELTA_T):
         [0., 0., -r_signed * sin(theta) + r_signed * sin(theta + omega_t * delta_t)],
         [0., 0., 0.]])
 
+def H_i_t(d, q, j):
+    d_x = d[0]
+    d_y = d[1]
+    sqrt_q = np.sqrt(q)
+    H_low = 1. / q * np.array([
+        [-sqrt_q * d_x, -sqrt_q * d_y,  0,  sqrt_q * d_x,   sqrt_q * d_y],
+        [d_y,           -d_x,           -q, -d_y,           d_x]
+    ])
+    return H_low @ F_x_j(j)
+
 def init_landmark(mu_t, j, z):
     """
     Set the map-frame position of landmark j in mu_t to match the
