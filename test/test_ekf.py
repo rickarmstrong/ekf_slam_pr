@@ -126,7 +126,7 @@ def test_in_range():
         [0., 1.]
     ]))
 
-def test_measure_zero_noise():
+def test_get_measurements_zero_noise():
     # x, y, theta: at origin, looking down the x-axis.
     x_t = np.array([0., 0., 0.])
 
@@ -149,6 +149,23 @@ def test_measure_zero_noise():
     assert len(j_i) == 0.
     assert len(z_i_t) == 0.
 
+    # Rotate the sensor to point up the y-axis.
+    x_t = np.array([0., 0., np.pi / 2.])
+    j_i, z_i_t = get_measurements(x_t, landmarks, max_range=1.0, Q=np.zeros(2))
+    expected = np.array([
+        [1., -np.pi / 2.],
+        [1., 0.]
+    ])
+    assert np.allclose(np.array(z_i_t), expected)
+
+    # Rotate the sensor to point down the negative x-axis.
+    x_t = np.array([0., 0., -np.pi / 2.])
+    j_i, z_i_t = get_measurements(x_t, landmarks, max_range=1.0, Q=np.zeros(2))
+    expected = np.array([
+        [1., np.pi / 2.],
+        [1., np.pi]
+    ])
+    assert np.allclose(np.array(z_i_t), expected)
 
 def test_measure_noisy():
 
