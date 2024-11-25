@@ -3,9 +3,14 @@ from math import cos, sin
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ekf_slam import LM_DIMS, N_LANDMARKS, POSE_DIMS, STATE_DIMS, jj
+from ekf_slam import LM_DIMS, N_LANDMARKS, POSE_DIMS, STATE_DIMS, jj, new_cov_matrix
 from ekf_slam.ekf import F_x_j, g, get_expected_measurement, init_landmark
 from ekf_slam.sim import in_range, get_measurements
+
+def test_new_cov_matrix():
+    # Smoke test.
+    C = new_cov_matrix()
+
 
 def test_F_x_j():
     Fxj = F_x_j(0)
@@ -37,6 +42,7 @@ def test_F_x_j():
         [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1.],
     ])
     assert np.allclose(Fxj, Fxj_expected)
+
 
 def test_g():
     """Minimal smoke test."""
@@ -126,6 +132,7 @@ def test_in_range():
         [0., 1.]
     ]))
 
+
 def test_get_measurements_zero_noise():
     # x, y, theta: at origin, looking down the x-axis.
     x_t = np.array([0., 0., 0.])
@@ -166,6 +173,7 @@ def test_get_measurements_zero_noise():
         [1., np.pi]
     ])
     assert np.allclose(np.array(z_i_t), expected)
+
 
 def test_measure_noisy():
 

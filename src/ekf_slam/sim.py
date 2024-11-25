@@ -6,11 +6,11 @@ SIM_TIME = 40.0  # simulation time [s].
 MAX_RANGE = 10.0  # Maximum observation range.
 
 # Simulated measurement noise params. stdev of range and bearing measurements noise.
-Q_sim = np.array([0.01, np.deg2rad(1.0)])
+Q_sim = np.array([0.1, np.deg2rad(3.0)])
 
 
 # Simulated velocity command noise params. stdev of velocity and angular rate noise.
-R_sim = np.array([1.0, np.deg2rad(10.0)])
+R_sim = np.array([0.5, np.deg2rad(1.0)])
 
 # Process noise covariance: we handle it in the dumbest way possible, by just adding a
 # constant matrix pulled out of our behind. A couple of reasonable ways to do it are

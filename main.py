@@ -7,8 +7,8 @@ https://github.com/AtsushiSakai/PythonRobotics/tree/master/SLAM/EKFSLAM
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ekf_slam import DELTA_T, N_LANDMARKS, POSE_DIMS, STATE_DIMS, LM_DIMS, jj, get_landmark
-from ekf_slam.ekf import F_x, g, G_t_x, get_expected_measurement, init_landmark
+from ekf_slam import DELTA_T, N_LANDMARKS, POSE_DIMS, STATE_DIMS, new_cov_matrix, get_landmark
+from ekf_slam.ekf import F_x, g, G_t_x, H_i_t, init_landmark
 from ekf_slam.sim import get_vel_cmd, MAX_RANGE, get_measurements, R_t, SIM_TIME, validate_landmarks
 
 # Initial robot pose and landmark ground truth.
@@ -30,8 +30,8 @@ def main():
     mu_bar_prev = np.zeros(STATE_DIMS)  # Previous prediction, i.e. at t-1.
     mu_gt_prev = np.zeros(STATE_DIMS)  # Ground truth.
 
-    S_bar = np.zeros((STATE_DIMS, STATE_DIMS))
-    S_bar_prev = np.zeros((STATE_DIMS, STATE_DIMS))
+    S_bar = new_cov_matrix()
+    S_bar_prev = new_cov_matrix()
 
     # Init history.
     mu_gt_h = mu_bar
@@ -61,6 +61,19 @@ def main():
             z_hat = np.array([
                 np.sqrt(q),
                 np.atan2(d[1], d[0] - mu_bar[2])])
+            H_i_t_j = H_i_t(d, q, j)
+
+            # Kalman gain.
+            try:
+                K_i_t = (S_bar @ H_i_t_j.T) @ np.linalg.inv(H_i_t_j @ S_bar @ H_i_t_j.T)
+                #K_i_t = (S_bar @ H_i_t_j.T) @ np.linalg.inv(H_i_t_j @ S_bar)
+            except np.linalg.LinAlgError as e:
+                print(f"Exception: {e}")
+                continue
+
+            # Update our state.
+            mu_bar = mu_bar + K_i_t @ (z - z_hat)
+            S_bar = (np.eye(STATE_DIMS) - K_i_t @ H_i_t_j) @ S_bar
 
         # Store history for plotting.
         mu_gt_h = np.vstack((mu_gt_h, mu_gt))
@@ -70,11 +83,12 @@ def main():
         t += DELTA_T
         mu_gt_prev = mu_gt
         mu_bar_prev = mu_bar
+        S_bar_prev = S_bar
 
-    # Ground-truth positions.
+    # Ground-truth robot positions.
     plt.plot(mu_gt_h[:, 0], mu_gt_h[:, 1], '-b')
 
-    # Position estimates.
+    # Robot position estimates.
     plt.plot(mu_bar_h[:, 0], mu_bar_h[:, 1], '-r')
 
     # Ground-truth landmark positions.
@@ -83,7 +97,7 @@ def main():
     # Landmark estimates.
     for j in range(N_LANDMARKS):
         lm = get_landmark(mu_bar, j)
-        plt.plot(lm[0], lm[1], 'or')
+        plt.plot(lm[0], lm[1], '+r')
 
     plt.axis('equal')
     plt.grid(True)
