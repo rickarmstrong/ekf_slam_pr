@@ -7,6 +7,7 @@ from ekf_slam import LM_DIMS, N_LANDMARKS, POSE_DIMS, STATE_DIMS, jj, new_cov_ma
 from ekf_slam.ekf import F_x_j, g, get_expected_measurement, init_landmark
 from ekf_slam.sim import in_range, get_measurements
 
+
 def test_new_cov_matrix():
     # Smoke test.
     C = new_cov_matrix()
