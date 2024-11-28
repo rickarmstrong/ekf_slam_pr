@@ -6,32 +6,25 @@ SIM_TIME = 40.0  # simulation time [s].
 MAX_RANGE = 10.0  # Maximum observation range.
 
 # Simulated measurement noise params. stdev of range and bearing measurements noise.
-Q_sim = np.array([0.1, np.deg2rad(3.0)])
+Q_sim = np.array([0.1, np.deg2rad(0.1)])
+Q_t = np.diag([Q_sim[0] ** 2,  Q_sim[1] ** 2])
 
-
-# Simulated velocity command noise params. stdev of velocity and angular rate noise.
-R_sim = np.array([0.5, np.deg2rad(1.0)])
-
-# Process noise covariance: we handle it in the dumbest way possible, by just adding a
-# constant matrix pulled out of our behind. A couple of reasonable ways to do it are
-# discussed here:
-# https://github.com/cra-ros-pkg/robot_localization/blob/ef0a27352962c56a970f2bbeb8687313b9e54a9a/src/filter_base.cpp#L132.
-# If this were a real robot, it might matter, but for the purpose of simulation, we just cheat.
-# Note: we assume a Unicycle model, which means there's never a y-component to our velocity
-# in the robot frame. We make noise in y much smaller than in x.
-R_t = np.diag([0.1, 0.1, 0.01])
+# Simlated process noise covariance.
+R_sim = np.array([0.1, 0.1, np.deg2rad(0.1)])
+R_t = np.diag([R_sim[0] ** 2, R_sim[1] ** 2, R_sim[1] ** 2])
 
 
 def get_vel_cmd(R=R_sim):
     rng = np.random.default_rng()
 
     v = 1.0  # [m/s]
-    omega = 0.1  # [rad/s]
+    omega = 0.000000000000001  # [rad/s]
 
     u = np.array([v, omega])
-    u_noisy =  rng.normal([v, omega], scale=R)
+    u_noisy = rng.normal([v, omega], scale=R)
 
     return u, u_noisy
+
 
 def in_range(x_t, landmarks, max_range=MAX_RANGE):
     """
