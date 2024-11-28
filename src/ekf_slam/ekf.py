@@ -7,6 +7,7 @@ from ekf_slam import DELTA_T, LM_DIMS, POSE_DIMS, N_LANDMARKS, jj
 # Maps from 3D pose space [x  y  theta].T to the full EKF state space [x_R m].T, shape == (2N+3,)
 F_x = np.hstack((np.eye(POSE_DIMS), np.zeros((POSE_DIMS, LM_DIMS * N_LANDMARKS))))
 
+
 def F_x_j(j):
     """Build a matrix that maps the 2x5 jacobian of the measurement function to the
     full EKF covariance space (2N+3 x 2N+3).
@@ -43,6 +44,7 @@ def F_x_j(j):
     pad_2 = np.zeros((5, 2*N_LANDMARKS - 2*jn))
     F = np.hstack((F, pad_2))
     return F
+
 
 def g(u_t, mu, delta_t=DELTA_T):
     """
@@ -111,6 +113,7 @@ def G_t_x(u_t, mu, delta_t=DELTA_T):
         [0., 0., -r_signed * sin(theta) + r_signed * sin(theta + omega_t * delta_t)],
         [0., 0., 0.]])
 
+
 def H_i_t(d, q, j):
     d_x = d[0]
     d_y = d[1]
@@ -120,6 +123,7 @@ def H_i_t(d, q, j):
         [d_y,           -d_x,           -q, -d_y,           d_x]
     ])
     return H_low @ F_x_j(j)
+
 
 def init_landmark(mu_t, j, z):
     """
