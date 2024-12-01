@@ -4,11 +4,14 @@ import numpy as np
 
 from ekf_slam import DELTA_T, LM_DIMS, POSE_DIMS, N_LANDMARKS, jj
 
-# Maps from 3D pose space [x  y  theta].T to the full EKF state space [x_R m].T, shape == (2N+3,)
-F_x = np.hstack((np.eye(POSE_DIMS), np.zeros((POSE_DIMS, LM_DIMS * N_LANDMARKS))))
+
+def F_x(n_landmarks):
+    """Return a matrix that maps from 3D pose space [x  y  theta].T to the full EKF
+    state space [x_R m].T, shape == (2N+3,)"""
+    return np.hstack((np.eye(POSE_DIMS), np.zeros((POSE_DIMS, LM_DIMS * n_landmarks))))
 
 
-def F_x_j(j):
+def F_x_j(j, n_landmarks=N_LANDMARKS):
     """Build a matrix that maps the 2x5 jacobian of the measurement function to the
     full EKF covariance space (2N+3 x 2N+3).
 
@@ -41,12 +44,12 @@ def F_x_j(j):
     F = np.hstack((F, selector))
 
     # Add the final padding.
-    pad_2 = np.zeros((5, 2*N_LANDMARKS - 2*jn))
+    pad_2 = np.zeros((5, 2*n_landmarks - 2*jn))
     F = np.hstack((F, pad_2))
     return F
 
 
-def g(u_t, mu, delta_t=DELTA_T):
+def g(u_t, mu, delta_t=DELTA_T, n_landmarks=N_LANDMARKS):
     """
     Noise-free velocity motion model.
     Args:
@@ -75,7 +78,7 @@ def g(u_t, mu, delta_t=DELTA_T):
         omega_t * delta_t])
 
     # Current (full) state + pose delta.
-    return mu + F_x.T @ delta_x
+    return mu + F_x(n_landmarks).T @ delta_x
 
 
 def get_expected_measurement(mu_t, j):

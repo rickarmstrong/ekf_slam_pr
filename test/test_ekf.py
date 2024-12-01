@@ -14,7 +14,8 @@ def test_new_cov_matrix():
 
 
 def test_F_x_j():
-    Fxj = F_x_j(0)
+    n_landmarks = 4
+    Fxj = F_x_j(0, n_landmarks)
     Fxj_expected = np.array([
         [1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
         [0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
@@ -24,7 +25,7 @@ def test_F_x_j():
     ])
     assert np.allclose(Fxj, Fxj_expected)
 
-    Fxj = F_x_j(1)
+    Fxj = F_x_j(1, n_landmarks)
     Fxj_expected = np.array([
         [1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
         [0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
@@ -34,7 +35,7 @@ def test_F_x_j():
     ])
     assert np.allclose(Fxj, Fxj_expected)
 
-    Fxj = F_x_j(3)
+    Fxj = F_x_j(3, n_landmarks)
     Fxj_expected = np.array([
         [1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
         [0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],

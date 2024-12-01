@@ -14,18 +14,6 @@ R_sim = np.array([0.1, 0.1, np.deg2rad(0.1)])
 R_t = np.diag([R_sim[0] ** 2, R_sim[1] ** 2, R_sim[1] ** 2])
 
 
-def get_vel_cmd(R=R_sim):
-    rng = np.random.default_rng()
-
-    v = 1.0  # [m/s]
-    omega = 0.000000000000001  # [rad/s]
-
-    u = np.array([v, omega])
-    u_noisy = rng.normal([v, omega], scale=R)
-
-    return u, u_noisy
-
-
 def in_range(x_t, landmarks, max_range=MAX_RANGE):
     """
     Return a list of landmark indices corresponding to landmarks that are
