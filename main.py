@@ -9,18 +9,20 @@ import numpy as np
 
 from ekf_slam import DELTA_T, N_LANDMARKS, POSE_DIMS, STATE_DIMS, new_cov_matrix, get_landmark
 from ekf_slam.ekf import F_x, g, G_t_x, H_i_t, init_landmark
-from ekf_slam.sim import get_vel_cmd, MAX_RANGE, get_measurements, R_t, SIM_TIME, validate_landmarks
+from ekf_slam.sim import MAX_RANGE, get_measurements, Q_t, R_t, SIM_TIME, validate_landmarks
 
-# Initial robot pose and landmark ground truth.
 INITIAL_POSE = np.zeros((POSE_DIMS, 1))
 LANDMARKS = np.array([
     [10.0, -2.0],
-    [15.0, 10.0],
+    [15.0, 20.0],
     [3.0, 15.0],
-    [-5.0, 20.0]])
+    [-5.0, 20.0],
+    [30., 5.]
+])
 validate_landmarks(LANDMARKS)
 
 SHOW_PLOT = False
+
 
 def main():
     t = 0.0
@@ -30,8 +32,8 @@ def main():
     mu_bar_prev = np.zeros(STATE_DIMS)  # Previous prediction, i.e. at t-1.
     mu_gt_prev = np.zeros(STATE_DIMS)  # Ground truth.
 
-    S_bar = new_cov_matrix()
-    S_bar_prev = new_cov_matrix()
+    S_bar = np.eye(STATE_DIMS)
+    S_bar_prev = np.eye(STATE_DIMS)
 
     # Init history.
     mu_gt_h = mu_bar
@@ -40,16 +42,17 @@ def main():
 
     while SIM_TIME >= t:
         ### Predict. ###
-        u_t, u_t_noisy = get_vel_cmd()
+        u_t = np.array([1.0, 0.000000000001])
         mu_gt = g(u_t, mu_gt_prev)  # Noise-free prediction of next state, keeping only the pose for ground truth.
-        mu_bar = g(u_t_noisy, mu_bar_prev)  # Prediction of next state with some additive noise.
+        mu_bar = g(u_t, mu_bar_prev, R=R_t)  # Prediction of next state with some additive noise.
 
         # Update predicted covariance.
-        G_t = np.eye(STATE_DIMS) + F_x.T @ G_t_x(u_t_noisy, mu_bar_prev) @ F_x
-        S_bar = G_t @ S_bar_prev @ G_t.T + F_x.T @ R_t @ F_x
+        Fx = F_x(N_LANDMARKS)
+        G_t = np.eye(STATE_DIMS) + Fx.T @ G_t_x(u_t, mu_bar_prev) @ Fx
+        S_bar = G_t @ S_bar_prev @ G_t.T + Fx.T @ R_t @ Fx
 
         ### Observe. ###
-        j_i, z_i = get_measurements(mu_gt, LANDMARKS, MAX_RANGE)
+        j_i, z_i = get_measurements(mu_gt, LANDMARKS, MAX_RANGE, Q=np.diag([0., 0.]))
 
         ### Correct. ###
         for j, z in zip(j_i, z_i):
@@ -65,8 +68,7 @@ def main():
 
             # Kalman gain.
             try:
-                K_i_t = (S_bar @ H_i_t_j.T) @ np.linalg.inv(H_i_t_j @ S_bar @ H_i_t_j.T)
-                #K_i_t = (S_bar @ H_i_t_j.T) @ np.linalg.inv(H_i_t_j @ S_bar)
+                K_i_t = (S_bar @ H_i_t_j.T) @ np.linalg.inv((H_i_t_j @ S_bar @ H_i_t_j.T) + Q_t)
             except np.linalg.LinAlgError as e:
                 print(f"Exception: {e}")
                 continue
@@ -89,7 +91,7 @@ def main():
     plt.plot(mu_gt_h[:, 0], mu_gt_h[:, 1], '-b')
 
     # Robot position estimates.
-    plt.plot(mu_bar_h[:, 0], mu_bar_h[:, 1], '-r')
+    plt.plot(mu_bar_h[:, 0], mu_bar_h[:, 1], '+r')
 
     # Ground-truth landmark positions.
     plt.plot(LANDMARKS[:, 0], LANDMARKS[:, 1], 'xb')
@@ -97,11 +99,12 @@ def main():
     # Landmark estimates.
     for j in range(N_LANDMARKS):
         lm = get_landmark(mu_bar, j)
-        plt.plot(lm[0], lm[1], '+r')
+        plt.plot(lm[0], lm[1], '*r')
 
     plt.axis('equal')
     plt.grid(True)
     plt.show()
+
 
 if __name__ == '__main__':
     main()

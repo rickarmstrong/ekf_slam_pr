@@ -21,6 +21,8 @@ def F_x_j(j, n_landmarks=N_LANDMARKS):
     Args:
         j : int
             Zero-based landmark index.
+        n_landmarks : int
+            Number of landmarks. We use this to pad the matrix to the full state dimensions.
     Returns:
         F : np.array.shape == (2N+3, 2N+3).
     """
@@ -49,7 +51,7 @@ def F_x_j(j, n_landmarks=N_LANDMARKS):
     return F
 
 
-def g(u_t, mu, delta_t=DELTA_T, n_landmarks=N_LANDMARKS):
+def g(u_t, mu, delta_t=DELTA_T, n_landmarks=N_LANDMARKS, R=np.diag([0.0, 0.0, 0.0])):
     """
     Noise-free velocity motion model.
     Args:
@@ -59,6 +61,10 @@ def g(u_t, mu, delta_t=DELTA_T, n_landmarks=N_LANDMARKS):
             Current (full) state vector. mu.shape==(STATE_DIMS,).
         delta_t : float, optional
             Time step for the prediction, in seconds.
+        n_landmarks : int, optional
+            Number of landmarks. We use this to pad the matrix to the full state dimensions.
+        R : np.array, optional
+            Process noise.
     Returns:
         Predicted state based on the current state, time step, and velocity command.
         Shape == (STATE_DIMS,).
@@ -76,6 +82,8 @@ def g(u_t, mu, delta_t=DELTA_T, n_landmarks=N_LANDMARKS):
         -r_signed * sin(theta) + r_signed * sin(theta + (omega_t * delta_t)),
         r_signed * cos(theta) - r_signed * cos(theta + (omega_t * delta_t)),
         omega_t * delta_t])
+
+    delta_x += np.sqrt(np.diagonal(R))  # Add simulated process noise.
 
     # Current (full) state + pose delta.
     return mu + F_x(n_landmarks).T @ delta_x

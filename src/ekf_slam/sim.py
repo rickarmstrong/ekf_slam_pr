@@ -61,8 +61,8 @@ def get_measurements(x_t, landmarks, max_range, Q=Q_sim):
         v_sensor_lm = lm - x_t[:2]  # Vector from sensor to landmark.
 
         # Calculate range, bearing, add sim noise.
-        r = np.linalg.norm(v_sensor_lm) + rng.normal(scale=Q[0])
-        phi = np.atan2(v_sensor_lm[1], v_sensor_lm[0]) + rng.normal(scale=Q[1])
+        r = np.linalg.norm(v_sensor_lm) + rng.normal(scale=Q[0][0])
+        phi = np.atan2(v_sensor_lm[1], v_sensor_lm[0]) + rng.normal(scale=Q[1][1])
         theta = x_t[2]  # Account for the rotation of the sensor.
         z_i.append(np.array([r, phi - theta]))
     return j_i, z_i
