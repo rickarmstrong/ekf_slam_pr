@@ -1,10 +1,15 @@
 import numpy as np
 
+
+LANDMARKS = np.array([
+    [10.0, -2.0],
+    [15.0, 2.0],
+])
+
 DELTA_T = 0.1  # time tick [s].
 POSE_DIMS = 3  # [x,y,yaw].
 LM_DIMS = 2  # [x,y].
-N_LANDMARKS = 5
-STATE_DIMS = POSE_DIMS + LM_DIMS * N_LANDMARKS
+STATE_DIMS = POSE_DIMS + LM_DIMS * len(LANDMARKS)
 
 
 # Landmark indexing helpers.
@@ -26,6 +31,6 @@ def new_cov_matrix():
     C = np.zeros((STATE_DIMS, STATE_DIMS))
 
     # Set landmark covariances to inf (unknown).
-    lm_covs = np.diag(np.full(N_LANDMARKS * LM_DIMS, np.finfo(np.float64).max))
+    lm_covs = np.diag(np.full(len(LANDMARKS) * LM_DIMS, np.finfo(np.float64).max))
     C[3:, 3:] = lm_covs
     return C

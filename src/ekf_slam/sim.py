@@ -1,6 +1,6 @@
 import numpy as np
 
-from ekf_slam import LM_DIMS, N_LANDMARKS, jj
+from ekf_slam import LM_DIMS, jj
 
 SIM_TIME = 40.0  # simulation time [s].
 MAX_RANGE = 10.0  # Maximum observation range.
@@ -35,7 +35,7 @@ def in_range(x_t, landmarks, max_range=MAX_RANGE):
     return idx
 
 
-def get_measurements(x_t, landmarks, max_range, Q=Q_sim):
+def get_measurements(x_t, landmarks, max_range, Q=Q_t):
     """
     Return a list of simulated landmark observations.
     Args:
@@ -66,12 +66,3 @@ def get_measurements(x_t, landmarks, max_range, Q=Q_sim):
         theta = x_t[2]  # Account for the rotation of the sensor.
         z_i.append(np.array([r, phi - theta]))
     return j_i, z_i
-
-
-def validate_landmarks(landmarks):
-    # Check assumptions about our fake landmarks.
-    assert len(landmarks) == N_LANDMARKS
-    for landmark in landmarks:
-        # Landmarks are initialized to (0, 0), in the state vector, so
-        # no landmarks at the origin.
-        assert np.all(np.not_equal(landmark, np.array([0., 0.])))

@@ -7,20 +7,11 @@ https://github.com/AtsushiSakai/PythonRobotics/tree/master/SLAM/EKFSLAM
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ekf_slam import DELTA_T, N_LANDMARKS, POSE_DIMS, STATE_DIMS, new_cov_matrix, get_landmark
+from ekf_slam import DELTA_T, LANDMARKS, POSE_DIMS, STATE_DIMS, new_cov_matrix, get_landmark
 from ekf_slam.ekf import F_x, g, G_t_x, H_i_t, init_landmark
 from ekf_slam.sim import MAX_RANGE, get_measurements, Q_t, R_t, SIM_TIME, validate_landmarks
 
 INITIAL_POSE = np.zeros((POSE_DIMS, 1))
-LANDMARKS = np.array([
-    [10.0, -2.0],
-    [15.0, 20.0],
-    [3.0, 15.0],
-    [-5.0, 20.0],
-    [30., 5.]
-])
-validate_landmarks(LANDMARKS)
-
 SHOW_PLOT = False
 
 
@@ -47,7 +38,7 @@ def main():
         mu_bar = g(u_t, mu_bar_prev, R=R_t)  # Prediction of next state with some additive noise.
 
         # Update predicted covariance.
-        Fx = F_x(N_LANDMARKS)
+        Fx = F_x(len(LANDMARKS))
         G_t = np.eye(STATE_DIMS) + Fx.T @ G_t_x(u_t, mu_bar_prev) @ Fx
         S_bar = G_t @ S_bar_prev @ G_t.T + Fx.T @ R_t @ Fx
 
@@ -97,7 +88,7 @@ def main():
     plt.plot(LANDMARKS[:, 0], LANDMARKS[:, 1], 'xb')
 
     # Landmark estimates.
-    for j in range(N_LANDMARKS):
+    for j in range(len(LANDMARKS)):
         lm = get_landmark(mu_bar, j)
         plt.plot(lm[0], lm[1], '*r')
 

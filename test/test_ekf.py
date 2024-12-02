@@ -3,7 +3,7 @@ from math import cos, sin
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ekf_slam import LM_DIMS, N_LANDMARKS, POSE_DIMS, STATE_DIMS, jj, new_cov_matrix
+from ekf_slam import LANDMARKS, LM_DIMS, POSE_DIMS, STATE_DIMS, jj, new_cov_matrix
 from ekf_slam.ekf import F_x_j, g, get_expected_measurement, init_landmark
 from ekf_slam.sim import in_range, get_measurements
 
@@ -50,8 +50,8 @@ def test_g():
     """Minimal smoke test."""
     rng = np.random.default_rng()
     u_t = np.array([1.0, 0.1])  # Velocity command: v, theta.
-    mu_current = rng.normal(size=(POSE_DIMS + LM_DIMS * N_LANDMARKS))
-    mu_next = g(u_t, mu_current)
+    mu_current = rng.normal(size=(POSE_DIMS + LM_DIMS * len(LANDMARKS)))
+    mu_next = g(u_t, mu_current, len(LANDMARKS))
     assert mu_current.shape == mu_next.shape
 
 
@@ -90,7 +90,7 @@ def test_g_one_sec():
 
     u_t = np.array([v_t, omega_t])
     x_0 = np.zeros(STATE_DIMS)
-    x_1 = g(u_t, x_0, delta_t)
+    x_1 = g(u_t, x_0, len(LANDMARKS), delta_t)
     assert np.isclose(x_1[0], sin(1.0))
     assert np.isclose(x_1[1], 1.0 - cos(1.0))
 
@@ -146,7 +146,7 @@ def test_get_measurements_zero_noise():
         [0., 1.]
     ])
 
-    j_i, z_i_t = get_measurements(x_t, landmarks, max_range=1.0, Q=np.zeros(2))
+    j_i, z_i_t = get_measurements(x_t, landmarks, max_range=1.0, Q=np.zeros((2, 2)))
     expected = np.array([
         [1., 0.],
         [1., np.pi / 2.]
@@ -154,13 +154,13 @@ def test_get_measurements_zero_noise():
     assert np.allclose(np.array(z_i_t), expected)
 
     # All landmarks out-of-range.
-    j_i, z_i_t = get_measurements(x_t, landmarks, max_range=0.1, Q=np.zeros(2))
+    j_i, z_i_t = get_measurements(x_t, landmarks, max_range=0.1, Q=np.zeros((2, 2)))
     assert len(j_i) == 0.
     assert len(z_i_t) == 0.
 
     # Rotate the sensor to point up the y-axis.
     x_t = np.array([0., 0., np.pi / 2.])
-    j_i, z_i_t = get_measurements(x_t, landmarks, max_range=1.0, Q=np.zeros(2))
+    j_i, z_i_t = get_measurements(x_t, landmarks, max_range=1.0, Q=np.zeros((2, 2)))
     expected = np.array([
         [1., -np.pi / 2.],
         [1., 0.]
@@ -169,7 +169,7 @@ def test_get_measurements_zero_noise():
 
     # Rotate the sensor to point down the negative x-axis.
     x_t = np.array([0., 0., -np.pi / 2.])
-    j_i, z_i_t = get_measurements(x_t, landmarks, max_range=1.0, Q=np.zeros(2))
+    j_i, z_i_t = get_measurements(x_t, landmarks, max_range=1.0, Q=np.zeros((2, 2)))
     expected = np.array([
         [1., np.pi / 2.],
         [1., np.pi]

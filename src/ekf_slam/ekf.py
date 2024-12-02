@@ -2,7 +2,7 @@ from math import cos, sin
 
 import numpy as np
 
-from ekf_slam import DELTA_T, LM_DIMS, POSE_DIMS, N_LANDMARKS, jj
+from ekf_slam import DELTA_T, LM_DIMS, POSE_DIMS, jj
 
 
 def F_x(n_landmarks):
@@ -11,7 +11,7 @@ def F_x(n_landmarks):
     return np.hstack((np.eye(POSE_DIMS), np.zeros((POSE_DIMS, LM_DIMS * n_landmarks))))
 
 
-def F_x_j(j, n_landmarks=N_LANDMARKS):
+def F_x_j(j, n_landmarks):
     """Build a matrix that maps the 2x5 jacobian of the measurement function to the
     full EKF covariance space (2N+3 x 2N+3).
 
@@ -51,7 +51,7 @@ def F_x_j(j, n_landmarks=N_LANDMARKS):
     return F
 
 
-def g(u_t, mu, delta_t=DELTA_T, n_landmarks=N_LANDMARKS, R=np.diag([0.0, 0.0, 0.0])):
+def g(u_t, mu, n_landmarks, delta_t=DELTA_T, R=np.diag([0.0, 0.0, 0.0])):
     """
     Noise-free velocity motion model.
     Args:
