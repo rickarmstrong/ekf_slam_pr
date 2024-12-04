@@ -11,7 +11,7 @@ from ekf_slam import DELTA_T, LANDMARKS, POSE_DIMS, STATE_DIMS, get_landmark
 from ekf_slam.ekf import F_x, g, get_expected_measurement, G_t_x, H_i_t, init_landmark
 from ekf_slam.sim import MAX_RANGE, get_measurements, Q_t, R_t, SIM_TIME
 
-INITIAL_POSE = np.zeros((POSE_DIMS, 1))
+INITIAL_POSE = np.array([0., 0., 0.])
 SHOW_PLOT = False
 
 
@@ -25,6 +25,11 @@ def main():
 
     S_t_prev = np.eye(STATE_DIMS)  # LaTeX: \Sigma_{t-1}
     S_t_bar = np.eye(STATE_DIMS)  # \bar\Sigma_t
+
+    # Set initial pose.
+    mu_t_bar[:3] = INITIAL_POSE
+    mu_t_prev[:3] = INITIAL_POSE
+    mu_t_prev_gt[:3] = INITIAL_POSE
 
     # Init history.
     mu_t_bar_gt_h = mu_t_bar
