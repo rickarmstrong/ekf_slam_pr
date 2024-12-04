@@ -60,10 +60,6 @@ def test_get_expected_measurement():
     n_landmarks = 2
     mu_t = np.zeros(POSE_DIMS + 2 * LM_DIMS)
 
-    # Robot at (1, 0), looking down the x-axis.
-    x = np.array([1., 0., 0.])  # x, y, theta.
-    mu_t[:3] = x
-
     # Landmarks: one at "nine o'clock", relative to the robot,
     # another straight behind the robot.
     landmarks = np.array([
@@ -73,9 +69,24 @@ def test_get_expected_measurement():
     mu_t[jj(0): jj(0) + LM_DIMS] = landmarks[0]
     mu_t[jj(1): jj(1) + LM_DIMS] = landmarks[1]
 
+    # Robot at (1, 0), looking down the x-axis.
+    mu_t[:3] = np.array([1., 0., 0.])  # x, y, theta.
+
     expected_measurements = np.array([
         [1., np.pi / 2.],
         [2., np.pi]
+    ])
+    for j in range(n_landmarks):
+        z_hat = get_expected_measurement(mu_t, j)
+        assert np.allclose(z_hat, expected_measurements[j])
+
+
+    # Robot at (1, 0), looking parallel to the positive y-axis.
+    mu_t[:3] = np.array([1., 0., np.pi / 2.])  # x, y, theta.
+
+    expected_measurements = np.array([
+        [1., 0.],
+        [2., np.pi / 2.]
     ])
     for j in range(n_landmarks):
         z_hat = get_expected_measurement(mu_t, j)

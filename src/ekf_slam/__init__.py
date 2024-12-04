@@ -1,9 +1,8 @@
 import numpy as np
 
-
 LANDMARKS = np.array([
-    [10.0, -2.0],
-    [15.0, 2.0],
+    [10.0, 5.0],
+    [20.0, -5.0],
 ])
 
 DELTA_T = 0.1  # time tick [s].
@@ -25,12 +24,3 @@ def get_landmark(mu_t, j):
 
 def set_landmark(mu_t, j, lm):
     mu_t[jj(j): jj(j) + LM_DIMS] = lm
-
-
-def new_cov_matrix():
-    C = np.zeros((STATE_DIMS, STATE_DIMS))
-
-    # Set landmark covariances to inf (unknown).
-    lm_covs = np.diag(np.full(len(LANDMARKS) * LM_DIMS, np.finfo(np.float64).max))
-    C[3:, 3:] = lm_covs
-    return C
