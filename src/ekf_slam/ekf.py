@@ -2,12 +2,16 @@ from math import cos, sin
 
 import numpy as np
 
-from ekf_slam import DELTA_T, LM_DIMS, POSE_DIMS, N_LANDMARKS, jj
+from ekf_slam import get_landmark, DELTA_T, LM_DIMS, POSE_DIMS, jj, LANDMARKS
 
-# Maps from 3D pose space [x  y  theta].T to the full EKF state space [x_R m].T, shape == (2N+3,)
-F_x = np.hstack((np.eye(POSE_DIMS), np.zeros((POSE_DIMS, LM_DIMS * N_LANDMARKS))))
 
-def F_x_j(j):
+def F_x(n_landmarks):
+    """Return a matrix that maps from 3D pose space [x  y  theta].T to the full EKF
+    state space [x_R m].T, shape == (2N+3,)"""
+    return np.hstack((np.eye(POSE_DIMS), np.zeros((POSE_DIMS, LM_DIMS * n_landmarks))))
+
+
+def F_x_j(j, n_landmarks):
     """Build a matrix that maps the 2x5 jacobian of the measurement function to the
     full EKF covariance space (2N+3 x 2N+3).
 
@@ -17,6 +21,8 @@ def F_x_j(j):
     Args:
         j : int
             Zero-based landmark index.
+        n_landmarks : int
+            Number of landmarks. We use this to pad the matrix to the full state dimensions.
     Returns:
         F : np.array.shape == (2N+3, 2N+3).
     """
@@ -40,11 +46,12 @@ def F_x_j(j):
     F = np.hstack((F, selector))
 
     # Add the final padding.
-    pad_2 = np.zeros((5, 2*N_LANDMARKS - 2*jn))
+    pad_2 = np.zeros((5, 2*n_landmarks - 2*jn))
     F = np.hstack((F, pad_2))
     return F
 
-def g(u_t, mu, delta_t=DELTA_T):
+
+def g(u_t, mu, n_landmarks, delta_t=DELTA_T, R=np.diag([0.0, 0.0, 0.0])):
     """
     Noise-free velocity motion model.
     Args:
@@ -54,6 +61,10 @@ def g(u_t, mu, delta_t=DELTA_T):
             Current (full) state vector. mu.shape==(STATE_DIMS,).
         delta_t : float, optional
             Time step for the prediction, in seconds.
+        n_landmarks : int, optional
+            Number of landmarks. We use this to pad the matrix to the full state dimensions.
+        R : np.array, optional
+            Process noise covariance matrix. We only use the diagonals.
     Returns:
         Predicted state based on the current state, time step, and velocity command.
         Shape == (STATE_DIMS,).
@@ -72,8 +83,14 @@ def g(u_t, mu, delta_t=DELTA_T):
         r_signed * cos(theta) - r_signed * cos(theta + (omega_t * delta_t)),
         omega_t * delta_t])
 
+    rng = np.random.default_rng()
+    noise = np.array([
+        rng.normal(scale=np.sqrt(R[0][0])),
+        rng.normal(scale=np.sqrt(R[1][1])),
+        rng.normal(scale=np.sqrt(R[2][2]))])
+
     # Current (full) state + pose delta.
-    return mu + F_x.T @ delta_x
+    return mu + F_x(n_landmarks).T @ (delta_x + noise)
 
 
 def get_expected_measurement(mu_t, j):
@@ -86,14 +103,19 @@ def get_expected_measurement(mu_t, j):
         j : int
             The landmark index.
     Returns:
-        The expected range/bearing of the landmark.
+        z_hat : np.array
+            The expected range/bearing of the landmark.
+        H_i_t_j : np.array
+            Jacobian of the observation. shape == (5, STATE_DIMS,).
     """
-    x_t = mu_t[:2]
-    lm_bar = mu_t[jj(j): jj(j) + LM_DIMS]
-    v = lm_bar - x_t
+    d = get_landmark(mu_t, j) - mu_t[:2]
+    q = np.inner(d.T, d)
+    z_hat = np.array([
+        np.sqrt(q),
+        np.atan2(d[1], d[0] - mu_t[2])])
+    H_i_t_j = H_i_t(d, q, j)
 
-    # r, phi.
-    return np.array([np.linalg.norm(v), np.atan2(v[1], v[0])])
+    return z_hat, H_i_t_j
 
 
 def G_t_x(u_t, mu, delta_t=DELTA_T):
@@ -111,6 +133,7 @@ def G_t_x(u_t, mu, delta_t=DELTA_T):
         [0., 0., -r_signed * sin(theta) + r_signed * sin(theta + omega_t * delta_t)],
         [0., 0., 0.]])
 
+
 def H_i_t(d, q, j):
     d_x = d[0]
     d_y = d[1]
@@ -119,7 +142,8 @@ def H_i_t(d, q, j):
         [-sqrt_q * d_x, -sqrt_q * d_y,  0,  sqrt_q * d_x,   sqrt_q * d_y],
         [d_y,           -d_x,           -q, -d_y,           d_x]
     ])
-    return H_low @ F_x_j(j)
+    return H_low @ F_x_j(j, len(LANDMARKS))
+
 
 def init_landmark(mu_t, j, z):
     """

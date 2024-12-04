@@ -1,37 +1,18 @@
 import numpy as np
 
-from ekf_slam import LM_DIMS, N_LANDMARKS, jj
+from ekf_slam import LM_DIMS, jj
 
 SIM_TIME = 40.0  # simulation time [s].
-MAX_RANGE = 10.0  # Maximum observation range.
+MAX_RANGE = 20.0  # Maximum observation range.
 
 # Simulated measurement noise params. stdev of range and bearing measurements noise.
-Q_sim = np.array([0.01, np.deg2rad(1.0)])
+Q_sim = np.array([0.01, np.deg2rad(0.01)])
+Q_t = np.diag([Q_sim[0] ** 2,  Q_sim[1] ** 2])
 
+# Simulated process noise covariance.
+R_sim = np.array([0.01, 0.01, np.deg2rad(0.01)])
+R_t = np.diag([R_sim[0] ** 2, R_sim[1] ** 2, R_sim[1] ** 2])
 
-# Simulated velocity command noise params. stdev of velocity and angular rate noise.
-R_sim = np.array([1.0, np.deg2rad(10.0)])
-
-# Process noise covariance: we handle it in the dumbest way possible, by just adding a
-# constant matrix pulled out of our behind. A couple of reasonable ways to do it are
-# discussed here:
-# https://github.com/cra-ros-pkg/robot_localization/blob/ef0a27352962c56a970f2bbeb8687313b9e54a9a/src/filter_base.cpp#L132.
-# If this were a real robot, it might matter, but for the purpose of simulation, we just cheat.
-# Note: we assume a Unicycle model, which means there's never a y-component to our velocity
-# in the robot frame. We make noise in y much smaller than in x.
-R_t = np.diag([0.1, 0.1, 0.01])
-
-
-def get_vel_cmd(R=R_sim):
-    rng = np.random.default_rng()
-
-    v = 1.0  # [m/s]
-    omega = 0.1  # [rad/s]
-
-    u = np.array([v, omega])
-    u_noisy =  rng.normal([v, omega], scale=R)
-
-    return u, u_noisy
 
 def in_range(x_t, landmarks, max_range=MAX_RANGE):
     """
@@ -54,7 +35,7 @@ def in_range(x_t, landmarks, max_range=MAX_RANGE):
     return idx
 
 
-def get_measurements(x_t, landmarks, max_range, Q=Q_sim):
+def get_measurements(x_t, landmarks, max_range, Q=Q_t):
     """
     Return a list of simulated landmark observations.
     Args:
@@ -80,17 +61,8 @@ def get_measurements(x_t, landmarks, max_range, Q=Q_sim):
         v_sensor_lm = lm - x_t[:2]  # Vector from sensor to landmark.
 
         # Calculate range, bearing, add sim noise.
-        r = np.linalg.norm(v_sensor_lm) + rng.normal(scale=Q[0])
-        phi = np.atan2(v_sensor_lm[1], v_sensor_lm[0]) + rng.normal(scale=Q[1])
+        r = np.linalg.norm(v_sensor_lm) + rng.normal(scale=np.sqrt(Q[0][0]))
+        phi = np.atan2(v_sensor_lm[1], v_sensor_lm[0]) + rng.normal(scale=np.sqrt(Q[1][1]))
         theta = x_t[2]  # Account for the rotation of the sensor.
         z_i.append(np.array([r, phi - theta]))
     return j_i, z_i
-
-
-def validate_landmarks(landmarks):
-    # Check assumptions about our fake landmarks.
-    assert len(landmarks) == N_LANDMARKS
-    for landmark in landmarks:
-        # Landmarks are initialized to (0, 0), in the state vector, so
-        # no landmarks at the origin.
-        assert np.all(np.not_equal(landmark, np.array([0., 0.])))

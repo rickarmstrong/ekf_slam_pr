@@ -3,12 +3,19 @@ from math import cos, sin
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ekf_slam import LM_DIMS, N_LANDMARKS, POSE_DIMS, STATE_DIMS, jj
+from ekf_slam import LANDMARKS, LM_DIMS, POSE_DIMS, STATE_DIMS, jj, new_cov_matrix
 from ekf_slam.ekf import F_x_j, g, get_expected_measurement, init_landmark
 from ekf_slam.sim import in_range, get_measurements
 
+
+def test_new_cov_matrix():
+    # Smoke test.
+    C = new_cov_matrix()
+
+
 def test_F_x_j():
-    Fxj = F_x_j(0)
+    n_landmarks = 4
+    Fxj = F_x_j(0, n_landmarks)
     Fxj_expected = np.array([
         [1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
         [0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
@@ -18,7 +25,7 @@ def test_F_x_j():
     ])
     assert np.allclose(Fxj, Fxj_expected)
 
-    Fxj = F_x_j(1)
+    Fxj = F_x_j(1, n_landmarks)
     Fxj_expected = np.array([
         [1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
         [0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
@@ -28,7 +35,7 @@ def test_F_x_j():
     ])
     assert np.allclose(Fxj, Fxj_expected)
 
-    Fxj = F_x_j(3)
+    Fxj = F_x_j(3, n_landmarks)
     Fxj_expected = np.array([
         [1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
         [0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
@@ -38,12 +45,13 @@ def test_F_x_j():
     ])
     assert np.allclose(Fxj, Fxj_expected)
 
+
 def test_g():
     """Minimal smoke test."""
     rng = np.random.default_rng()
     u_t = np.array([1.0, 0.1])  # Velocity command: v, theta.
-    mu_current = rng.normal(size=(POSE_DIMS + LM_DIMS * N_LANDMARKS))
-    mu_next = g(u_t, mu_current)
+    mu_current = rng.normal(size=(POSE_DIMS + LM_DIMS * len(LANDMARKS)))
+    mu_next = g(u_t, mu_current, len(LANDMARKS))
     assert mu_current.shape == mu_next.shape
 
 
@@ -51,10 +59,6 @@ def test_get_expected_measurement():
     # State vector representing a robot and two landmarks.
     n_landmarks = 2
     mu_t = np.zeros(POSE_DIMS + 2 * LM_DIMS)
-
-    # Robot at (1, 0), looking down the x-axis.
-    x = np.array([1., 0., 0.])  # x, y, theta.
-    mu_t[:3] = x
 
     # Landmarks: one at "nine o'clock", relative to the robot,
     # another straight behind the robot.
@@ -65,9 +69,24 @@ def test_get_expected_measurement():
     mu_t[jj(0): jj(0) + LM_DIMS] = landmarks[0]
     mu_t[jj(1): jj(1) + LM_DIMS] = landmarks[1]
 
+    # Robot at (1, 0), looking down the x-axis.
+    mu_t[:3] = np.array([1., 0., 0.])  # x, y, theta.
+
     expected_measurements = np.array([
         [1., np.pi / 2.],
         [2., np.pi]
+    ])
+    for j in range(n_landmarks):
+        z_hat = get_expected_measurement(mu_t, j)
+        assert np.allclose(z_hat, expected_measurements[j])
+
+
+    # Robot at (1, 0), looking parallel to the positive y-axis.
+    mu_t[:3] = np.array([1., 0., np.pi / 2.])  # x, y, theta.
+
+    expected_measurements = np.array([
+        [1., 0.],
+        [2., np.pi / 2.]
     ])
     for j in range(n_landmarks):
         z_hat = get_expected_measurement(mu_t, j)
@@ -82,7 +101,7 @@ def test_g_one_sec():
 
     u_t = np.array([v_t, omega_t])
     x_0 = np.zeros(STATE_DIMS)
-    x_1 = g(u_t, x_0, delta_t)
+    x_1 = g(u_t, x_0, len(LANDMARKS), delta_t)
     assert np.isclose(x_1[0], sin(1.0))
     assert np.isclose(x_1[1], 1.0 - cos(1.0))
 
@@ -126,6 +145,7 @@ def test_in_range():
         [0., 1.]
     ]))
 
+
 def test_get_measurements_zero_noise():
     # x, y, theta: at origin, looking down the x-axis.
     x_t = np.array([0., 0., 0.])
@@ -137,7 +157,7 @@ def test_get_measurements_zero_noise():
         [0., 1.]
     ])
 
-    j_i, z_i_t = get_measurements(x_t, landmarks, max_range=1.0, Q=np.zeros(2))
+    j_i, z_i_t = get_measurements(x_t, landmarks, max_range=1.0, Q=np.zeros((2, 2)))
     expected = np.array([
         [1., 0.],
         [1., np.pi / 2.]
@@ -145,13 +165,13 @@ def test_get_measurements_zero_noise():
     assert np.allclose(np.array(z_i_t), expected)
 
     # All landmarks out-of-range.
-    j_i, z_i_t = get_measurements(x_t, landmarks, max_range=0.1, Q=np.zeros(2))
+    j_i, z_i_t = get_measurements(x_t, landmarks, max_range=0.1, Q=np.zeros((2, 2)))
     assert len(j_i) == 0.
     assert len(z_i_t) == 0.
 
     # Rotate the sensor to point up the y-axis.
     x_t = np.array([0., 0., np.pi / 2.])
-    j_i, z_i_t = get_measurements(x_t, landmarks, max_range=1.0, Q=np.zeros(2))
+    j_i, z_i_t = get_measurements(x_t, landmarks, max_range=1.0, Q=np.zeros((2, 2)))
     expected = np.array([
         [1., -np.pi / 2.],
         [1., 0.]
@@ -160,12 +180,13 @@ def test_get_measurements_zero_noise():
 
     # Rotate the sensor to point down the negative x-axis.
     x_t = np.array([0., 0., -np.pi / 2.])
-    j_i, z_i_t = get_measurements(x_t, landmarks, max_range=1.0, Q=np.zeros(2))
+    j_i, z_i_t = get_measurements(x_t, landmarks, max_range=1.0, Q=np.zeros((2, 2)))
     expected = np.array([
         [1., np.pi / 2.],
         [1., np.pi]
     ])
     assert np.allclose(np.array(z_i_t), expected)
+
 
 def test_measure_noisy():
 
