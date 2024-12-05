@@ -3,14 +3,14 @@ import numpy as np
 from ekf_slam import LM_DIMS, jj
 
 SIM_TIME = 40.0  # simulation time [s].
-MAX_RANGE = 10.0  # Maximum observation range.
+MAX_RANGE = 15.0  # Maximum observation range.
 
 # Simulated measurement noise params. stdev of range and bearing measurements noise.
 Q_sim = np.array([0.1, np.deg2rad(0.1)])
 Q_t = np.diag([Q_sim[0] ** 2,  Q_sim[1] ** 2])
 
 # Simulated process noise covariance.
-R_sim = np.array([0.2, 0.2, np.deg2rad(0.1)])
+R_sim = np.array([0.4, 0.4, np.deg2rad(0.1)])
 R_t = np.diag([R_sim[0] ** 2, R_sim[1] ** 2, R_sim[2] ** 2])
 
 

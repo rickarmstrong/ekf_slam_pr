@@ -2,7 +2,7 @@ import numpy as np
 
 LANDMARKS = np.array([
     [10.0, 5.0],
-    [15.0, 30.0],
+    [10.0, 20.0],
 ])
 
 DELTA_T = 0.1  # time tick [s].

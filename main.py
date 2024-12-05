@@ -11,7 +11,7 @@ from ekf_slam import DELTA_T, LANDMARKS, STATE_DIMS, get_landmark
 from ekf_slam.ekf import F_x, g, get_expected_measurement, G_t_x, init_landmark
 from ekf_slam.sim import MAX_RANGE, get_measurements, Q_t, R_t, SIM_TIME
 
-INITIAL_POSE = np.array([0., 0., np.pi / 4.])
+INITIAL_POSE = np.array([0., 0., 0.])
 SHOW_PLOT = False
 
 
@@ -22,11 +22,9 @@ def main():
     mu_t = np.zeros(STATE_DIMS)  # Motion model-based state prediction. LaTeX: \bar \mu_t
     S_t = np.eye(STATE_DIMS) * 1000000 # LaTeX: \Sigma_t
 
-    # Init pose.
+    # Init pose and pose covariance.
     mu_t[:3] = INITIAL_POSE
-    S_t[0][0] = 0.
-    S_t[1][1] = 0.
-    S_t[2][2] = 0.
+    S_t[:3, :3] = np.zeros((3, 3))
 
     # Init history.
     mu_t_h = [mu_t]
@@ -36,10 +34,10 @@ def main():
 
     while SIM_TIME >= t:
         ### Predict. ###
-        u_t = np.array([1.0, 0.03])
+        u_t = np.array([1.0, 0.1])
         mu_t_bar = g(u_t, mu_t_h[-1], R=R_t)  # Prediction of next state with some additive noise.
-        mu_t_bar_dr = g(u_t, mu_t_bar_dr_h[-1], R=R_t)
-        mu_t_bar_gt = g(u_t, mu_t_bar_gt_h[-1])
+        mu_t_bar_dr = g(u_t, mu_t_bar_dr_h[-1], R=R_t)  # Same, but for dead-reckoning.
+        mu_t_bar_gt = g(u_t, mu_t_bar_gt_h[-1])  # Noise-free, for ground truth.
 
         # Save dead reckoning and ground truth.
         mu_t_bar_dr_h.append(mu_t_bar_dr)
@@ -70,7 +68,6 @@ def main():
 
             # Update our state and covariance estimates for this observation.
             mu_t = mu_t_bar + K_i_t @ (z - z_hat)
-            mu_t[2] = np.atan2(np.sin(mu_t[2]),np.cos(mu_t[2]))  # Normalize theta.
             S_t = (np.eye(STATE_DIMS) - K_i_t @ H_i_t_j) @ S_t_bar
 
         # Store history, for access to last state, and for plotting.
