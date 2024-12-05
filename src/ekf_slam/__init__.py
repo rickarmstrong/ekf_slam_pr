@@ -2,7 +2,7 @@ import numpy as np
 
 LANDMARKS = np.array([
     [10.0, 5.0],
-    [20.0, -5.0],
+    [15.0, 30.0],
 ])
 
 DELTA_T = 0.1  # time tick [s].
@@ -24,3 +24,7 @@ def get_landmark(mu_t, j):
 
 def set_landmark(mu_t, j, lm):
     mu_t[jj(j): jj(j) + LM_DIMS] = lm
+
+
+def get_landmark_count(mu_t):
+    return int((len(mu_t) - POSE_DIMS) / LM_DIMS)

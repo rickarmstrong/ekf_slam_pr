@@ -3,14 +3,9 @@ from math import cos, sin
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ekf_slam import LANDMARKS, LM_DIMS, POSE_DIMS, STATE_DIMS, jj, new_cov_matrix
+from ekf_slam import LANDMARKS, LM_DIMS, POSE_DIMS, STATE_DIMS, jj
 from ekf_slam.ekf import F_x_j, g, get_expected_measurement, init_landmark
 from ekf_slam.sim import in_range, get_measurements
-
-
-def test_new_cov_matrix():
-    # Smoke test.
-    C = new_cov_matrix()
 
 
 def test_F_x_j():
@@ -77,7 +72,7 @@ def test_get_expected_measurement():
         [2., np.pi]
     ])
     for j in range(n_landmarks):
-        z_hat = get_expected_measurement(mu_t, j)
+        z_hat, H = get_expected_measurement(mu_t, j)
         assert np.allclose(z_hat, expected_measurements[j])
 
 
@@ -89,7 +84,7 @@ def test_get_expected_measurement():
         [2., np.pi / 2.]
     ])
     for j in range(n_landmarks):
-        z_hat = get_expected_measurement(mu_t, j)
+        z_hat, H = get_expected_measurement(mu_t, j)
         assert np.allclose(z_hat, expected_measurements[j])
 
 

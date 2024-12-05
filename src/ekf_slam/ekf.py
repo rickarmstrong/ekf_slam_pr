@@ -2,7 +2,7 @@ from math import cos, sin
 
 import numpy as np
 
-from ekf_slam import get_landmark, DELTA_T, LM_DIMS, POSE_DIMS, jj, LANDMARKS
+from ekf_slam import get_landmark, get_landmark_count, DELTA_T, LM_DIMS, POSE_DIMS, jj, LANDMARKS
 
 
 def F_x(n_landmarks):
@@ -51,7 +51,7 @@ def F_x_j(j, n_landmarks):
     return F
 
 
-def g(u_t, mu, n_landmarks, delta_t=DELTA_T, R=np.diag([0.0, 0.0, 0.0])):
+def g(u_t, mu, delta_t=DELTA_T, R=np.diag([0.0, 0.0, 0.0])):
     """
     Noise-free velocity motion model.
     Args:
@@ -61,8 +61,6 @@ def g(u_t, mu, n_landmarks, delta_t=DELTA_T, R=np.diag([0.0, 0.0, 0.0])):
             Current (full) state vector. mu.shape==(STATE_DIMS,).
         delta_t : float, optional
             Time step for the prediction, in seconds.
-        n_landmarks : int, optional
-            Number of landmarks. We use this to pad the matrix to the full state dimensions.
         R : np.array, optional
             Process noise covariance matrix. We only use the diagonals.
     Returns:
@@ -85,12 +83,12 @@ def g(u_t, mu, n_landmarks, delta_t=DELTA_T, R=np.diag([0.0, 0.0, 0.0])):
 
     rng = np.random.default_rng()
     noise = np.array([
-        rng.normal(scale=np.sqrt(R[0][0])),
-        rng.normal(scale=np.sqrt(R[1][1])),
-        rng.normal(scale=np.sqrt(R[2][2]))])
+        rng.normal(scale=np.sqrt(R[0][0])) * delta_t,
+        rng.normal(scale=np.sqrt(R[1][1])) * delta_t,
+        rng.normal(scale=np.sqrt(R[2][2])) * delta_t])
 
     # Current (full) state + pose delta.
-    return mu + F_x(n_landmarks).T @ (delta_x + noise)
+    return mu + F_x(get_landmark_count(mu)).T @ (delta_x + noise)
 
 
 def get_expected_measurement(mu_t, j):
@@ -112,8 +110,8 @@ def get_expected_measurement(mu_t, j):
     q = np.inner(d.T, d)
     z_hat = np.array([
         np.sqrt(q),
-        np.atan2(d[1], d[0] - mu_t[2])])
-    H_i_t_j = H_i_t(d, q, j)
+        np.atan2(d[1], d[0]) - mu_t[2]])
+    H_i_t_j = H_i_t(d, q, j, get_landmark_count(mu_t))
 
     return z_hat, H_i_t_j
 
@@ -134,7 +132,7 @@ def G_t_x(u_t, mu, delta_t=DELTA_T):
         [0., 0., 0.]])
 
 
-def H_i_t(d, q, j):
+def H_i_t(d, q, j, n_landmarks):
     d_x = d[0]
     d_y = d[1]
     sqrt_q = np.sqrt(q)
@@ -142,7 +140,7 @@ def H_i_t(d, q, j):
         [-sqrt_q * d_x, -sqrt_q * d_y,  0,  sqrt_q * d_x,   sqrt_q * d_y],
         [d_y,           -d_x,           -q, -d_y,           d_x]
     ])
-    return H_low @ F_x_j(j, len(LANDMARKS))
+    return H_low @ F_x_j(j, n_landmarks)
 
 
 def init_landmark(mu_t, j, z):
