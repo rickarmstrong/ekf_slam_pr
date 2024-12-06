@@ -1,9 +1,9 @@
 import numpy as np
 
-from ekf_slam import LM_DIMS, jj
+from ekf_slam.ekf import g
 
 SIM_TIME = 40.0  # simulation time [s].
-MAX_RANGE = 15.0  # Maximum observation range.
+MAX_RANGE = 10.0  # Maximum observation range.
 
 # Simulated measurement noise params. stdev of range and bearing measurements noise.
 Q_sim = np.array([0.1, np.deg2rad(0.1)])
@@ -33,6 +33,15 @@ def in_range(x_t, landmarks, max_range=MAX_RANGE):
         if np.linalg.norm(lm - x_t) <= max_range:
             idx.append(j)
     return idx
+
+
+def generate_trajectory(u_t, initial_state, duration, time_step, R=np.diag([0.0, 0.0, 0.0])):
+    t = 0.
+    mu_t_h = [np.array(initial_state)]
+    while duration >= t:
+        mu_t_h.append(g(u_t, mu_t_h[-1], delta_t=time_step, R=R))
+        t += time_step
+    return mu_t_h
 
 
 def get_measurements(x_t, landmarks, max_range, Q=Q_t):
