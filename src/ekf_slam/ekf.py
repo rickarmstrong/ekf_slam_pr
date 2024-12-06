@@ -53,7 +53,7 @@ def F_x_j(j, n_landmarks):
 
 def g(u_t, mu, delta_t=DELTA_T, R=np.diag([0.0, 0.0, 0.0])):
     """
-    Noise-free velocity motion model.
+    Noise-free velocity motion model, with the option to add Gaussian process noise.
     Args:
         u_t : np.array
             Current control command: (v, theta). u_t.shape==(2,).

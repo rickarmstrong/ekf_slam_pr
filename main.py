@@ -9,7 +9,7 @@ import numpy as np
 
 from ekf_slam import DELTA_T, LANDMARKS, STATE_DIMS, get_landmark
 from ekf_slam.ekf import F_x, g, get_expected_measurement, G_t_x, init_landmark
-from ekf_slam.sim import MAX_RANGE, get_measurements, Q_t, R_t, SIM_TIME
+from ekf_slam.sim import MAX_RANGE, generate_trajectory, get_measurements, Q_t, R_t, SIM_TIME
 
 INITIAL_POSE = np.array([0., 0., 0.])
 SHOW_PLOT = False
@@ -26,22 +26,18 @@ def main():
     mu_t[:3] = INITIAL_POSE
     S_t[:3, :3] = np.zeros((3, 3))
 
-    # Init history.
+    # Constant control input.
+    u_t = np.array([1.0, 0.1])
+
+    # Init history. We pre-generate ground-truth and dead-reckoning.
     mu_t_h = [mu_t]
-    mu_t_bar_gt_h = [mu_t]
-    mu_t_bar_dr_h = [mu_t]  # Dead Reckoning.
+    mu_t_bar_gt_h = generate_trajectory(u_t, mu_t, SIM_TIME, DELTA_T)  # Ground-truth.
+    mu_t_bar_dr_h = generate_trajectory(u_t, mu_t, SIM_TIME, DELTA_T, R_t)  # Dead-reckoning.
     S_t_h = [S_t]
 
     while SIM_TIME >= t:
-        ### Predict. ###
-        u_t = np.array([1.0, 0.1])
+        ## Predict. ###
         mu_t_bar = g(u_t, mu_t_h[-1], R=R_t)  # Prediction of next state with some additive noise.
-        mu_t_bar_dr = g(u_t, mu_t_bar_dr_h[-1], R=R_t)  # Same, but for dead-reckoning.
-        mu_t_bar_gt = g(u_t, mu_t_bar_gt_h[-1])  # Noise-free, for ground truth.
-
-        # Save dead reckoning and ground truth.
-        mu_t_bar_dr_h.append(mu_t_bar_dr)
-        mu_t_bar_gt_h.append(mu_t_bar_gt)
 
         # Update predicted covariance.
         Fx = F_x(len(LANDMARKS))
@@ -49,26 +45,30 @@ def main():
         S_t_bar = G_t @ S_t_h[-1] @ G_t.T + Fx.T @ R_t @ Fx
 
         ### Observe. ###
-        j_i, z_i = get_measurements(mu_t_bar_gt, LANDMARKS, MAX_RANGE, Q=Q_t)
+        j_i, z_i = get_measurements(mu_t_bar_gt_h[int(t / DELTA_T)], LANDMARKS, MAX_RANGE, Q=Q_t)
 
         # Correct. ###
-        for j, z in zip(j_i, z_i):
-            if np.allclose(get_landmark(mu_t_bar, j), np.zeros(2)):
-                init_landmark(mu_t_bar, j, z)
+        if len(j_i) != 0:
+            for j, z in zip(j_i, z_i):
+                if np.allclose(get_landmark(mu_t_bar, j), np.zeros(2)):
+                    init_landmark(mu_t_bar, j, z)
 
-            z_hat, H_i_t_j = get_expected_measurement(mu_t_bar, j)
+                z_hat, H_i_t_j = get_expected_measurement(mu_t_bar, j)
 
-            # Kalman gain.
-            try:
-                # (2N+3, 2) = (2N+3,2N+3) @ (2N+3, 2) @ ((2, 2N+3) @ (2N+3, 2N+3) @ (2N+3, 2) + (2, 2))^-1
-                K_i_t = (S_t_bar @ H_i_t_j.T) @ np.linalg.inv((H_i_t_j @ S_t_bar @ H_i_t_j.T) + Q_t)
-            except np.linalg.LinAlgError as e:
-                print(f"Exception: {e}")
-                continue
+                # Kalman gain.
+                try:
+                    # (2N+3, 2) = (2N+3,2N+3) @ (2N+3, 2) @ ((2, 2N+3) @ (2N+3, 2N+3) @ (2N+3, 2) + (2, 2))^-1
+                    K_i_t = (S_t_bar @ H_i_t_j.T) @ np.linalg.inv((H_i_t_j @ S_t_bar @ H_i_t_j.T) + Q_t)
+                except np.linalg.LinAlgError as e:
+                    print(f"Exception: {e}")
+                    continue
 
-            # Update our state and covariance estimates for this observation.
-            mu_t = mu_t_bar + K_i_t @ (z - z_hat)
-            S_t = (np.eye(STATE_DIMS) - K_i_t @ H_i_t_j) @ S_t_bar
+                # Update our state and covariance estimates for this observation.
+                mu_t = mu_t_bar + K_i_t @ (z - z_hat)
+                S_t = (np.eye(STATE_DIMS) - K_i_t @ H_i_t_j) @ S_t_bar
+        else:
+            # No landmark observations, go with the motion model.
+            mu_t = mu_t_bar
 
         # Store history, for access to last state, and for plotting.
         mu_t_h.append(mu_t)
