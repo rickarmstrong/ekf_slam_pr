@@ -5,11 +5,13 @@ Plotting and ground truth generation code borrowed from
 https://github.com/AtsushiSakai/PythonRobotics/tree/master/SLAM/EKFSLAM
 """
 import matplotlib.pyplot as plt
+from matplotlib.patches import Ellipse
+
 import numpy as np
 
-from ekf_slam import DELTA_T, LANDMARKS, STATE_DIMS, get_landmark
+from ekf_slam import DELTA_T, LANDMARKS, STATE_DIMS, get_landmark, get_landmark_cov
 from ekf_slam.ekf import F_x, g, get_expected_measurement, G_t_x, init_landmark
-from ekf_slam.sim import MAX_RANGE, generate_trajectory, get_measurements, Q_t, R_t, SIM_TIME
+from ekf_slam.sim import confidence_ellipse, MAX_RANGE, generate_trajectory, get_measurements, Q_t, R_t, SIM_TIME
 
 INITIAL_POSE = np.array([0., 0., 0.])
 SHOW_PLOT = False
@@ -69,6 +71,7 @@ def main():
         else:
             # No landmark observations, go with the motion model.
             mu_t = mu_t_bar
+            S_t = S_t_bar
 
         # Store history, for access to last state, and for plotting.
         mu_t_h.append(mu_t)
@@ -76,25 +79,28 @@ def main():
 
         t += DELTA_T
 
+    fig, ax = plt.subplots()
+
     # Ground-truth robot positions.
     gt = np.vstack(mu_t_bar_gt_h)
-    plt.plot(gt[:, 0], gt[:, 1], '.b')
+    ax.plot(gt[:, 0], gt[:, 1], '.b')
 
     # Dead reckoning motion estimates.
     dr = np.vstack(mu_t_bar_dr_h)
-    plt.plot(dr[:, 0], dr[:, 1], '.r')
+    ax.plot(dr[:, 0], dr[:, 1], '.r')
 
     # Ground-truth landmark positions.
-    plt.plot(LANDMARKS[:, 0], LANDMARKS[:, 1], 'xb')
+    ax.plot(LANDMARKS[:, 0], LANDMARKS[:, 1], 'xb')
 
     # Robot position estimates.
     mu = np.vstack(mu_t_h)
-    plt.plot(mu[:, 0], mu[:, 1], '+g')
+    ax.plot(mu[:, 0], mu[:, 1], '+g')
 
     # Final landmark position estimates.
     for j in range(len(LANDMARKS)):
         lm = get_landmark(mu_t_h[-1], j)
-        plt.plot(lm[0], lm[1], '*r')
+        ax.plot(lm[0], lm[1], '*r')
+        confidence_ellipse(lm[0], lm[1], get_landmark_cov(S_t, j), ax, n_std=3, edgecolor='red')
 
     plt.axis('equal')
     plt.grid(True)

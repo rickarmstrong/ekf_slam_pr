@@ -3,7 +3,7 @@ from math import cos, sin
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ekf_slam import LANDMARKS, LM_DIMS, POSE_DIMS, STATE_DIMS, jj
+from ekf_slam import get_landmark_cov, LANDMARKS, LM_DIMS, POSE_DIMS, STATE_DIMS, jj
 from ekf_slam.ekf import F_x_j, g, get_expected_measurement, init_landmark
 from ekf_slam.sim import in_range, get_measurements
 
@@ -86,6 +86,37 @@ def test_get_expected_measurement():
     for j in range(n_landmarks):
         z_hat, H = get_expected_measurement(mu_t, j)
         assert np.allclose(z_hat, expected_measurements[j])
+
+
+def test_get_landmark_cov():
+    # Example covariance matrix representing pose and two landmarks.
+    sigma = np.array([
+        [0., 0., 0., 0., 0., 0., 0.],
+        [0., 0., 0., 0., 0., 0., 0.],
+        [0., 0., 0., 0., 0., 0., 0.],
+        [0., 0., 0., 1., 0., 0., 0.],
+        [0., 0., 0., 0., 1., 0., 0.],
+        [0., 0., 0., 0., 0., 2., 0.],
+        [0., 0., 0., 0., 0., 0., 2.],
+    ])
+
+    lm_0_cov_expected = np.array([
+        [1., 0.],
+        [0., 1.]
+    ])
+    lm_0_cov = get_landmark_cov(sigma, 0)
+    assert np.allclose(lm_0_cov_expected, lm_0_cov)
+
+    lm_1_cov_expected = np.array([
+        [2., 0.],
+        [0., 2.]
+    ])
+    lm_1_cov = get_landmark_cov(sigma, 1)
+    assert np.allclose(lm_1_cov_expected, lm_1_cov)
+
+    # Ask for a covariance sub-matrix that doesn't exist.
+    lm_2_cov = get_landmark_cov(sigma, 2)
+    assert len(lm_2_cov) == 0
 
 
 def test_g_one_sec():
