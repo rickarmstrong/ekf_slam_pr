@@ -2,7 +2,7 @@ from math import cos, sin
 
 import numpy as np
 
-from ekf_slam import get_landmark, get_landmark_count, DELTA_T, LM_DIMS, POSE_DIMS, jj, LANDMARKS
+from ekf_slam import get_landmark, get_landmark_count, DELTA_T, LM_DIMS, POSE_DIMS, jj, range_bearing
 
 
 def F_x(n_landmarks):
@@ -91,31 +91,6 @@ def g(u_t, mu, delta_t=DELTA_T, R=np.diag([0.0, 0.0, 0.0])):
     mu_next = mu + F_x(get_landmark_count(mu)).T @ (delta_x + noise)
     mu_next[2] = np.atan2(np.sin(mu_next[2]), np.cos(mu_next[2]))  # Normalize to [-pi, pi].
     return mu_next
-
-
-def get_expected_measurement(mu_t, j):
-    """
-    Return the expected measurement (range, bearing) for estimated landmark j,
-    and current position estimate, taken from the current full state vector.
-    Args:
-        mu_t : np.array
-            shape == (STATE_DIMS,).
-        j : int
-            The landmark index.
-    Returns:
-        z_hat : np.array
-            The expected range/bearing of the landmark.
-        H_i_t_j : np.array
-            Jacobian of the observation. shape == (5, STATE_DIMS,).
-    """
-    d = get_landmark(mu_t, j) - mu_t[:2]
-    q = np.inner(d.T, d)
-    z_hat = np.array([
-        np.sqrt(q),
-        np.atan2(d[1], d[0]) - mu_t[2]])
-    H_i_t_j = H_i_t(d, q, j, get_landmark_count(mu_t))
-
-    return z_hat, H_i_t_j
 
 
 def G_t_x(u_t, mu, delta_t=DELTA_T):

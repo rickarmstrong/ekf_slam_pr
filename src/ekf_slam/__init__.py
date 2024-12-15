@@ -44,9 +44,19 @@ def get_landmark_cov(sigma_t, j):
 
 
 def range_bearing(x_t, lm):
-    """Given a sensor pose (x, y, theta), and a landmark position (x, y) in
+    """
+    Given a sensor pose (x, y, theta), and a landmark position (x, y) in
     the global frame, return range and bearing from the sensor to the landmark,
-    in the sensor frame."""
+    in the sensor frame.
+    Args:
+        x_t : np.array, len == 3
+            x, y, theta representing a sensor pose.
+        lm : np.array, len == 2
+            x, y position of a landmark seen by the sensor.
+
+    Returns:
+        z_hat: range, bearing of the observation.
+    """
     d = lm - x_t[:2]  # Vector from sensor to landmark.
     q = np.inner(d.T, d)
     z_hat = np.array([

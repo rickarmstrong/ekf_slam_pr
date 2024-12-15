@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from ekf_slam import get_landmark_cov, LANDMARKS, LM_DIMS, POSE_DIMS, STATE_DIMS, jj, range_bearing
-from ekf_slam.ekf import F_x_j, g, get_expected_measurement, init_landmark
+from ekf_slam.ekf import F_x_j, g, init_landmark
 from ekf_slam.sim import in_range, get_measurements
 
 
@@ -51,44 +51,6 @@ def test_g():
     assert mu_current.shape == mu_next.shape
 
 
-def test_get_expected_measurement():
-    # State vector representing a robot and two landmarks.
-    n_landmarks = 2
-    mu_t = np.zeros(POSE_DIMS + 2 * LM_DIMS)
-
-    # Landmarks: one at "nine o'clock", relative to the robot,
-    # another straight behind the robot.
-    landmarks = np.array([
-        [1., 1.],
-        [-1., 0.]
-    ])
-    mu_t[jj(0): jj(0) + LM_DIMS] = landmarks[0]
-    mu_t[jj(1): jj(1) + LM_DIMS] = landmarks[1]
-
-    # Robot at (1, 0), looking down the x-axis.
-    mu_t[:3] = np.array([1., 0., 0.])  # x, y, theta.
-
-    expected_measurements = np.array([
-        [1., np.pi / 2.],
-        [2., np.pi]
-    ])
-    for j in range(n_landmarks):
-        z_hat, H = get_expected_measurement(mu_t, j)
-        assert np.allclose(z_hat, expected_measurements[j])
-
-
-    # Robot at (1, 0), looking parallel to the positive y-axis.
-    mu_t[:3] = np.array([1., 0., np.pi / 2.])  # x, y, theta.
-
-    expected_measurements = np.array([
-        [1., 0.],
-        [2., np.pi / 2.]
-    ])
-    for j in range(n_landmarks):
-        z_hat, H = get_expected_measurement(mu_t, j)
-        assert np.allclose(z_hat, expected_measurements[j])
-
-
 def test_get_landmark_cov():
     # Example covariance matrix representing pose and two landmarks.
     sigma = np.array([
@@ -128,7 +90,7 @@ def test_g_one_sec():
 
     u_t = np.array([v_t, omega_t])
     x_0 = np.zeros(STATE_DIMS)
-    x_1 = g(u_t, x_0, len(LANDMARKS), delta_t)
+    x_1 = g(u_t, x_0, delta_t)
     assert np.isclose(x_1[0], sin(1.0))
     assert np.isclose(x_1[1], 1.0 - cos(1.0))
 
@@ -215,7 +177,7 @@ def test_get_measurements_zero_noise():
     assert np.allclose(np.array(z_i_t), expected)
 
 
-def test_measure_noisy():
+def test_measure_noisy(plot_observations=False):
 
     # x, y, theta: at origin, looking up the y-axis.
     x_t = np.array([0., 0., np.pi / 2.])
@@ -240,7 +202,7 @@ def test_measure_noisy():
                 z_t[j] = [z]  # First sighting.
 
     # Plot the observations.
-    if True:
+    if plot_observations:
         for j in z_t.keys():
             for obs in np.array(z_t[j]):
                 r = obs[0]

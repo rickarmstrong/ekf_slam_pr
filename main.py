@@ -5,12 +5,11 @@ Plotting and ground truth generation code borrowed from
 https://github.com/AtsushiSakai/PythonRobotics/tree/master/SLAM/EKFSLAM
 """
 import matplotlib.pyplot as plt
-from matplotlib.patches import Ellipse
 
 import numpy as np
 
-from ekf_slam import DELTA_T, LANDMARKS, STATE_DIMS, get_landmark, get_landmark_cov
-from ekf_slam.ekf import F_x, g, get_expected_measurement, G_t_x, init_landmark
+from ekf_slam import DELTA_T, LANDMARKS, STATE_DIMS, get_landmark, get_landmark_count, range_bearing
+from ekf_slam.ekf import F_x, g, G_t_x, H_i_t, init_landmark
 from ekf_slam.sim import confidence_ellipse, MAX_RANGE, generate_trajectory, get_measurements, Q_t, R_t, SIM_TIME
 
 INITIAL_POSE = np.array([0., 0., 0.])
@@ -51,10 +50,15 @@ def main():
 
         # Correct, based on available measurements.
         for j, z in zip(j_i, z_i):
-            if np.allclose(get_landmark(mu_t_bar, j), np.zeros(2)):
+            lm = get_landmark(mu_t_bar, j)
+            if np.allclose(lm, np.zeros(2)):
                 init_landmark(mu_t_bar, j, z)
 
-            z_hat, H_i_t_j = get_expected_measurement(mu_t_bar, j)
+            # Get the expected measurement.
+            z_hat = range_bearing(mu_t_bar[:3], lm)
+
+            # Get the Jacobian of the expected measurement.
+            H_i_t_j = H_i_t(lm - mu_t_bar[:2], z_hat[0] ** 2, j, get_landmark_count(mu_t_bar))
 
             # Kalman gain.
             try:

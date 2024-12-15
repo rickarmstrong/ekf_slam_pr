@@ -3,7 +3,7 @@ import matplotlib.transforms as transforms
 
 import numpy as np
 
-from ekf_slam.ekf import g
+from ekf_slam.ekf import g, range_bearing
 
 SIM_TIME = 40.0  # simulation time [s].
 MAX_RANGE = 10.0 # Maximum observation range.
@@ -123,13 +123,8 @@ def get_measurements(x_t, landmarks, max_range, Q=Q_t):
     z_i = []
     j_i = in_range(x_t[:2], landmarks, max_range)
     for j in j_i:
-        lm = landmarks[j]
-        v_sensor_lm = lm - x_t[:2]  # Vector from sensor to landmark.
-
-        # Calculate range, bearing, add sim noise.
-        r = np.linalg.norm(v_sensor_lm) + rng.normal(scale=np.sqrt(Q[0][0]))
-        phi = np.atan2(v_sensor_lm[1], v_sensor_lm[0]) + rng.normal(scale=np.sqrt(Q[1][1]))
-        theta = x_t[2]  # Account for the rotation of the sensor.
-        phi_normal =  np.atan2(np.sin(phi - theta), np.cos(phi - theta))
-        z_i.append(np.array([r, phi_normal]))
+        z = range_bearing(x_t, landmarks[j])
+        z[0] += rng.normal(scale=np.sqrt(Q[0][0]))
+        z[1] += rng.normal(scale=np.sqrt(Q[1][1]))
+        z_i.append(z)
     return j_i, z_i

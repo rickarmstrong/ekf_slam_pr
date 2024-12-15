@@ -22,3 +22,13 @@ https://www.sush.one/docs/SLAM/EKF.html#prediction-step-code
 
 
 Plot an ellipse: https://stackoverflow.com/questions/10952060/plot-ellipse-with-matplotlib-pyplot
+
+
+Some discoveries while contemplating angle wrapping in an EKF (searching on "EKF normalize angles"):
+A paper specifically about angle wrapping in EKFs: https://arxiv.org/pdf/1708.05551
+
+A filtering library written in Python: https://filterpy.readthedocs.io/en/latest/index.html
+
+A post that makes me think maybe I'm doing the z-z_hat thing wrong:
+https://robotics.stackexchange.com/questions/17873/kalman-filter-how-to-solve-angles-near-pi
+
