@@ -23,6 +23,10 @@ def get_landmark(mu_t, j):
     return mu_t[jj(j): jj(j) + LM_DIMS]
 
 
+def get_landmark_count(mu_t):
+    return int((len(mu_t) - POSE_DIMS) / LM_DIMS)
+
+
 def get_landmark_cov(sigma_t, j):
     """
     Given the full covariance matrix, fetch the submatrix that corresponds to
@@ -39,9 +43,18 @@ def get_landmark_cov(sigma_t, j):
     return lm_cov
 
 
+def range_bearing(x_t, lm):
+    """Given a sensor pose (x, y, theta), and a landmark position (x, y) in
+    the global frame, return range and bearing from the sensor to the landmark,
+    in the sensor frame."""
+    d = lm - x_t[:2]  # Vector from sensor to landmark.
+    q = np.inner(d.T, d)
+    z_hat = np.array([
+        np.sqrt(q),
+        np.atan2(d[1], d[0]) - x_t[2]])
+    z_hat[1] = np.atan2(np.sin(z_hat[1]), np.cos(z_hat[1]))  # Normalize to [-pi, pi).
+    return z_hat
+
+
 def set_landmark(mu_t, j, lm):
     mu_t[jj(j): jj(j) + LM_DIMS] = lm
-
-
-def get_landmark_count(mu_t):
-    return int((len(mu_t) - POSE_DIMS) / LM_DIMS)

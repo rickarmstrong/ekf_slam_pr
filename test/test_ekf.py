@@ -2,8 +2,9 @@ from math import cos, sin
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pytest
 
-from ekf_slam import get_landmark_cov, LANDMARKS, LM_DIMS, POSE_DIMS, STATE_DIMS, jj
+from ekf_slam import get_landmark_cov, LANDMARKS, LM_DIMS, POSE_DIMS, STATE_DIMS, jj, range_bearing
 from ekf_slam.ekf import F_x_j, g, get_expected_measurement, init_landmark
 from ekf_slam.sim import in_range, get_measurements
 
@@ -248,3 +249,23 @@ def test_measure_noisy():
                 y = r * sin(theta)
                 plt.plot(x, y, '.b')
         plt.show()
+
+# @pytest.mark.parametrize("test_input,expected", [("3+5", 8), ("2+4", 6), ("6*9", 42)])
+@pytest.mark.parametrize("sensor_pose,landmark,z_expected", [
+    # Sensor at the origin, landmark on the x-axis at (1., 0). Positive rotations
+    # through the 'cardinal' directions, i.e. x, y, -x, -y.
+    ([0., 0., 0.], [1., 0], [1., 0.]),
+    ([0., 0., np.pi / 2.], [1., 0], [1., -np.pi / 2.]),
+    ([0., 0., 2. * np.pi / 2.], [1., 0], [1., -np.pi]),
+    ([0., 0., 3. * np.pi / 2.], [1., 0], [1., np.pi / 2.]),
+
+    # Sensor at the origin, landmark on the x-axis at (1., 0). Negative rotations
+    # through the 'cardinal' directions, i.e. -y, -x, y.
+    ([0., 0., -np.pi / 2.], [1., 0], [1., np.pi / 2.]),
+    ([0., 0., 2. * -np.pi / 2.], [1., 0], [1., np.pi]),
+    ([0., 0., 3. * -np.pi / 2.], [1., 0], [1., -np.pi / 2.]),
+
+])
+def test_range_bearing(sensor_pose, landmark, z_expected):
+    z = range_bearing(np.array(sensor_pose), np.array(landmark))
+    assert np.allclose(z, z_expected)
