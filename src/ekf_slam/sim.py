@@ -13,7 +13,7 @@ Q_sim = np.array([0., np.deg2rad(0.1)])
 Q_t = np.diag([Q_sim[0] ** 2,  Q_sim[1] ** 2])
 
 # Simulated process noise covariance.
-R_sim = np.array([0.1, 0.05, np.deg2rad(0.1)])
+R_sim = np.array([0.1, 0.1, np.deg2rad(1.)])
 R_t = np.diag([R_sim[0] ** 2, R_sim[1] ** 2, R_sim[2] ** 2])
 
 
@@ -130,5 +130,6 @@ def get_measurements(x_t, landmarks, max_range, Q=Q_t):
         r = np.linalg.norm(v_sensor_lm) + rng.normal(scale=np.sqrt(Q[0][0]))
         phi = np.atan2(v_sensor_lm[1], v_sensor_lm[0]) + rng.normal(scale=np.sqrt(Q[1][1]))
         theta = x_t[2]  # Account for the rotation of the sensor.
-        z_i.append(np.array([r, phi - theta]))
+        phi_normal =  np.atan2(np.sin(phi - theta), np.cos(phi - theta))
+        z_i.append(np.array([r, phi_normal]))
     return j_i, z_i
