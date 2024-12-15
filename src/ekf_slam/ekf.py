@@ -88,7 +88,9 @@ def g(u_t, mu, delta_t=DELTA_T, R=np.diag([0.0, 0.0, 0.0])):
         rng.normal(scale=np.sqrt(R[2][2])) * delta_t])
 
     # Current (full) state + pose delta.
-    return mu + F_x(get_landmark_count(mu)).T @ (delta_x + noise)
+    mu_next = mu + F_x(get_landmark_count(mu)).T @ (delta_x + noise)
+    mu_next[2] = np.atan2(np.sin(mu_next[2]), np.cos(mu_next[2]))  # Normalize to [-pi, pi].
+    return mu_next
 
 
 def get_expected_measurement(mu_t, j):
