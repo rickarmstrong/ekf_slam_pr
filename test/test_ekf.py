@@ -265,6 +265,12 @@ def test_measure_noisy():
     ([0., 0., 2. * -np.pi / 2.], [1., 0], [1., np.pi]),
     ([0., 0., 3. * -np.pi / 2.], [1., 0], [1., -np.pi / 2.]),
 
+    # Sensor away from the origin.
+    ([1., 1., 0.], [2., 2.], [np.sqrt(2.), np.pi / 4.]),
+    ([1., 1., np.pi / 4.], [2., 2.], [np.sqrt(2.), 0.]),
+    ([1., 1., np.pi / 4.], [0., 0.], [np.sqrt(2.), -np.pi]),
+    ([1., 1., -np.pi / 4.], [0., 0.], [np.sqrt(2.), -np.pi / 2.]),
+
 ])
 def test_range_bearing(sensor_pose, landmark, z_expected):
     z = range_bearing(np.array(sensor_pose), np.array(landmark))
