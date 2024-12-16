@@ -158,13 +158,18 @@ def plot_one(k, **kwargs):
     cov = kwargs['S_t_h'][k][:2, :2]
     confidence_ellipse(float(mu[k, 0]), float(mu[k, 1]), cov, plt.gca(), n_std=3, edgecolor='red')
 
-    # Landmark measurements and estimated covariances, displayed as a confidence ellipse.
+    # Landmark measurementsv
     for j, z in kwargs['z_h'][k]:
         theta = mu[k, 2]
         zx = mu[k, 0] + z[0] * np.cos(z[1] + theta)
         zy = mu[k, 1] + z[0] * np.sin(z[1] + theta)
         plt.plot(zx, zy, '*g')
-        confidence_ellipse(zx, zy, get_landmark_cov(kwargs['S_t_h'][k], j), plt.gca(), n_std=3, edgecolor='red')
+
+    # Landmark covariance estimates for all non-zero landmarks.
+    for j in range(get_landmark_count(mu[k])):
+        lm = get_landmark(mu[k], j)
+        if not np.allclose(lm, np.zeros(2)):
+            confidence_ellipse(lm[0], lm[1], get_landmark_cov(kwargs['S_t_h'][k], j), plt.gca(), n_std=3, edgecolor='red')
 
     plt.annotate(f"t = {(k * DELTA_T):.2f}", (0., 10.))
     plt.annotate(f"MAX_RANGE = {MAX_RANGE}", (0., 8.))
