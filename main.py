@@ -4,16 +4,18 @@ Extended Kalman Filter SLAM example.
 Plotting and ground truth generation code borrowed from
 https://github.com/AtsushiSakai/PythonRobotics/tree/master/SLAM/EKFSLAM
 """
-import matplotlib.pyplot as plt
+import time
 
+import matplotlib.pyplot as plt
 import numpy as np
 
-from ekf_slam import DELTA_T, LANDMARKS, STATE_DIMS, get_landmark, get_landmark_count, range_bearing
+from ekf_slam import DELTA_T, LANDMARKS, STATE_DIMS, get_landmark, get_landmark_count, get_landmark_cov, range_bearing
 from ekf_slam.ekf import F_x, g, G_t_x, H_i_t, init_landmark
 from ekf_slam.sim import confidence_ellipse, MAX_RANGE, generate_trajectory, get_measurements, Q_t, R_t, SIM_TIME
 
 INITIAL_POSE = np.array([0., 0., 0.])
-SHOW_PLOT = False
+ANIMATE_PLOT = True
+
 
 
 def main():
@@ -35,6 +37,7 @@ def main():
     mu_t_bar_gt_h = generate_trajectory(u_t, mu_t_0, SIM_TIME, DELTA_T)  # Ground-truth.
     mu_t_bar_dr_h = generate_trajectory(u_t, mu_t_0, SIM_TIME, DELTA_T, R_t)  # Dead-reckoning.
     S_t_h = [S_t_0]
+    z_h = []
 
     while SIM_TIME >= t:
         ## Predict. ###
@@ -70,29 +73,50 @@ def main():
 
             # Update state and covariance estimates for this observation.
             mu_t_bar = mu_t_bar + K_i_t @ (z - z_hat)
+            mu_t_bar[2] = np.atan2(np.sin(mu_t_bar[2]), np.cos(mu_t_bar[2]))
             S_t_bar = (np.eye(STATE_DIMS) - K_i_t @ H_i_t_j) @ S_t_bar
 
         # Store history, for access to last state, and for plotting.
         mu_t_h.append(np.array(mu_t_bar))  # mu_t = mu_t_bar.
         S_t_h.append(np.array(S_t_bar))  # S_t = S_t_bar.
+        z_h.append(zip(j_i, z_i))
 
         t += DELTA_T
 
+    if ANIMATE_PLOT:
+        for k in range(len(mu_t_bar_gt_h)):
+            plot_one(
+                k,
+                mu_t_bar_gt_h=mu_t_bar_gt_h,
+                mu_t_bar_dr_h=mu_t_bar_dr_h,
+                landmarks_gt=LANDMARKS,
+                mu_t_h=mu_t_h,
+                S_t_h=S_t_h,
+                z_h=z_h)
+    else:
+        plot_all(
+            mu_t_bar_gt_h=mu_t_bar_gt_h,
+            mu_t_bar_dr_h=mu_t_bar_dr_h,
+            landmarks_gt=LANDMARKS,
+            mu_t_h=mu_t_h)
+
+
+def plot_all(**kwargs):
     fig, ax = plt.subplots()
 
     # Ground-truth robot positions.
-    gt = np.vstack(mu_t_bar_gt_h)
+    gt = np.vstack(kwargs['mu_t_bar_gt_h'])
     ax.plot(gt[:, 0], gt[:, 1], '.b')
 
     # Dead reckoning motion estimates.
-    dr = np.vstack(mu_t_bar_dr_h)
+    dr = np.vstack(kwargs['mu_t_bar_dr_h'])
     ax.plot(dr[:, 0], dr[:, 1], '.r')
 
     # Ground-truth landmark positions.
     ax.plot(LANDMARKS[:, 0], LANDMARKS[:, 1], 'xb')
 
     # Robot position estimates.
-    mu = np.vstack(mu_t_h)
+    mu = np.vstack(kwargs['mu_t_h'])
     ax.plot(mu[:, 0], mu[:, 1], '+g')
 
     # Final landmark position estimates.
@@ -109,6 +133,45 @@ def main():
     plt.figure(1)
     plt.plot(mu[:, 2])
     plt.show()
+
+
+def plot_one(k, **kwargs):
+    # Ground-truth robot positions. These are known ahead of time;
+    # plot them all at once to set the correct 'zoom' of the plot.
+    gt = np.vstack(kwargs['mu_t_bar_gt_h'])
+    plt.plot(gt[:, 0], gt[:, 1], '.b')
+
+    # Same for the dead reckoning motion estimates...
+    dr = np.vstack(kwargs['mu_t_bar_dr_h'])
+    plt.plot(dr[:, 0], dr[:, 1], '.r')
+
+    # ...and the ground-truth landmark positions.
+    # Ground-truth landmark positions.
+    lm_gt = kwargs['landmarks_gt']
+    plt.plot(lm_gt[:, 0], lm_gt[:, 1], 'xb')
+
+    # Robot position estimates, from t=0 to now.
+    mu = np.vstack(kwargs['mu_t_h'])
+    plt.plot(mu[:k, 0], mu[:k, 1], '+g')
+
+    # Robot position error covariance estimates.
+    cov = kwargs['S_t_h'][k][:2, :2]
+    confidence_ellipse(float(mu[k, 0]), float(mu[k, 1]), cov, plt.gca(), n_std=3, edgecolor='red')
+
+    # Landmark measurements and estimated covariances, displayed as a confidence ellipse.
+    for j, z in kwargs['z_h'][k]:
+        theta = mu[k, 2]
+        zx = mu[k, 0] + z[0] * np.cos(z[1] + theta)
+        zy = mu[k, 1] + z[0] * np.sin(z[1] + theta)
+        plt.plot(zx, zy, '*g')
+        confidence_ellipse(zx, zy, get_landmark_cov(kwargs['S_t_h'][k], j), plt.gca(), n_std=3, edgecolor='red')
+
+    plt.annotate(f"t = {(k * DELTA_T):.2f}", (0., 10.))
+    plt.annotate(f"MAX_RANGE = {MAX_RANGE}", (0., 8.))
+    plt.axis('equal')
+    plt.grid(True)
+    plt.pause(0.001)
+
 
 if __name__ == '__main__':
     main()

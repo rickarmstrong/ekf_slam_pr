@@ -1,9 +1,9 @@
 import numpy as np
 
 LANDMARKS = np.array([
-    [10., 5.],
-    [10., 20.],
-    [-5., 16.]
+    [0., 3.],
+    [2., 15],
+    [-5., 14.]
 ])
 
 DELTA_T = 0.1  # time tick [s].

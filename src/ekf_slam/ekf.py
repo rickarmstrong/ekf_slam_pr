@@ -89,7 +89,7 @@ def g(u_t, mu, delta_t=DELTA_T, R=np.diag([0.0, 0.0, 0.0])):
 
     # Current (full) state + pose delta.
     mu_next = mu + F_x(get_landmark_count(mu)).T @ (delta_x + noise)
-    mu_next[2] = np.atan2(np.sin(mu_next[2]), np.cos(mu_next[2]))  # Normalize to [-pi, pi].
+    mu_next[2] = np.atan2(np.sin(mu_next[2]), np.cos(mu_next[2]))  # Normalize to [-pi, pi).
     return mu_next
 
 

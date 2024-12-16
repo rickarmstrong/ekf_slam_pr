@@ -32,3 +32,10 @@ A filtering library written in Python: https://filterpy.readthedocs.io/en/latest
 A post that makes me think maybe I'm doing the z-z_hat thing wrong:
 https://robotics.stackexchange.com/questions/17873/kalman-filter-how-to-solve-angles-near-pi
 
+12/15/24: IT WORKS, or at least, it's _starting_ to look reasonable. We were blowing-up and diverging, 
+particularly with more than two landmarks and a range such that we always had all landmarks in-sight. 
+Finally peeled the onion down far enough, by resolving these:
+* Normalized pose and measurement angles. Tests and refactoring to reduce code duplication were key.
+* Non-zero measurement noise. Specifically, I had range variance set to zero. This is apparently Not 
+Good. In a hand-waving way, it's not totally surprising that a state estimation scheme based on the 
+assumption of perfectly Gaussian noise might go awry with zero-variance 'noise'.

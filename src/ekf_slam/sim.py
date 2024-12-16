@@ -5,15 +5,15 @@ import numpy as np
 
 from ekf_slam.ekf import g, range_bearing
 
-SIM_TIME = 40.0  # simulation time [s].
-MAX_RANGE = 10.0 # Maximum observation range.
+SIM_TIME = 60.0  # simulation time [s].
+MAX_RANGE = 8.0 # Maximum observation range.
 
 # Simulated measurement noise params. stdev of range and bearing measurements noise.
-Q_sim = np.array([0., np.deg2rad(0.1)])
+Q_sim = np.array([0.1, np.deg2rad(0.1)])
 Q_t = np.diag([Q_sim[0] ** 2,  Q_sim[1] ** 2])
 
 # Simulated process noise covariance.
-R_sim = np.array([0.1, 0.1, np.deg2rad(1.)])
+R_sim = np.array([0.1, 0.5, np.deg2rad(1.)])
 R_t = np.diag([R_sim[0] ** 2, R_sim[1] ** 2, R_sim[2] ** 2])
 
 
