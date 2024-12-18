@@ -51,7 +51,7 @@ def F_x_j(j, n_landmarks):
     return F
 
 
-def g(u_t, mu, delta_t=DELTA_T, R=np.diag([0.0, 0.0, 0.0])):
+def g(u_t, mu, delta_t=DELTA_T, M=np.diag([0.0, 0.0])):
     """
     Noise-free velocity motion model, with the option to add Gaussian process noise.
     Args:
@@ -61,8 +61,8 @@ def g(u_t, mu, delta_t=DELTA_T, R=np.diag([0.0, 0.0, 0.0])):
             Current (full) state vector. mu.shape==(STATE_DIMS,).
         delta_t : float, optional
             Time step for the prediction, in seconds.
-        R : np.array, optional
-            Process noise covariance matrix. We only use the diagonals.
+        M : np.array shape==(2, 2).
+            Control noise params. We use only the velocity angular velocity variances, from the diagonal.
     Returns:
         Predicted state based on the current state, time step, and velocity command.
         Shape == (STATE_DIMS,).
@@ -70,6 +70,11 @@ def g(u_t, mu, delta_t=DELTA_T, R=np.diag([0.0, 0.0, 0.0])):
     v_t = u_t[0]
     omega_t = u_t[1]
     theta = mu[2]
+
+    # Add control noise.
+    rng = np.random.default_rng()
+    v_t += rng.normal(scale=np.sqrt(M[0][0]))
+    omega_t +=  rng.normal(scale=np.sqrt(M[1][1]))
 
     # The control command u_t represents a circular trajectory, whose radius
     # is abs(v_t / omega_t). To reduce clutter we'll rename the signed ratio v/omega.
@@ -81,15 +86,9 @@ def g(u_t, mu, delta_t=DELTA_T, R=np.diag([0.0, 0.0, 0.0])):
         r_signed * cos(theta) - r_signed * cos(theta + (omega_t * delta_t)),
         omega_t * delta_t])
 
-    rng = np.random.default_rng()
-    noise = np.array([
-        rng.normal(scale=np.sqrt(R[0][0])) * delta_t,
-        rng.normal(scale=np.sqrt(R[1][1])) * delta_t,
-        rng.normal(scale=np.sqrt(R[2][2])) * delta_t])
-
     # Current (full) state + pose delta.
-    mu_next = mu + F_x(get_landmark_count(mu)).T @ (delta_x + noise)
-    mu_next[2] = np.atan2(np.sin(mu_next[2]), np.cos(mu_next[2]))  # Normalize to [-pi, pi).
+    mu_next = mu + F_x(get_landmark_count(mu)).T @ delta_x
+    mu_next[2] = np.atan2(np.sin(mu_next[2]), np.cos(mu_next[2]))  # Normalize to [-pi, pi].
     return mu_next
 
 
@@ -140,3 +139,24 @@ def init_landmark(mu_t, j, z):
     mu_t[jj(j): jj(j) + LM_DIMS] = np.array([
         x + r * cos(phi + theta),
         y + r * sin(phi + theta)])
+
+
+def V_t_x(u_t, mu, delta_t=DELTA_T):
+    v_t = u_t[0]
+    w_t = u_t[1]  # "omega_t"
+    theta = mu[2]
+
+    s_t = np.sin(theta)
+    c_t = np.cos(theta)
+    s_w_t = np.sin(theta + w_t * delta_t)
+    c_w_t = np.cos(theta + w_t * delta_t)
+
+    V_0_0 = (1. / w_t) * (-s_t + s_w_t)
+    V_0_1 = (v_t / w_t ** 2) * s_t  - s_w_t + (v_t / w_t) * c_w_t * delta_t
+    V_1_0 = (1. / w_t) * (c_t - c_w_t)
+    V_1_1 = -(v_t / w_t ** 2) * c_t - c_w_t + (v_t / w_t) * s_w_t * delta_t
+
+    return np.array([
+        [V_0_0, V_0_1],
+        [V_1_0, V_1_1],
+        [0., delta_t]])

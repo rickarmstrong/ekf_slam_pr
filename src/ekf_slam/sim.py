@@ -6,16 +6,15 @@ import numpy as np
 from ekf_slam.ekf import g, range_bearing
 
 SIM_TIME = 60.0  # simulation time [s].
-MAX_RANGE = 10.0 # Maximum observation range.
+MAX_RANGE = 5.0 # Maximum observation range.
+
+# Simulated control noise params.
+M_sim = np.array([1.0, np.deg2rad(0.1)])
+M_t = np.diag([M_sim[0] ** 2, M_sim[1] ** 2])
 
 # Simulated measurement noise params. stdev of range and bearing measurements noise.
-Q_sim = np.array([0.1, np.deg2rad(0.1)])
+Q_sim = np.array([0.1, np.deg2rad(0.5)])
 Q_t = np.diag([Q_sim[0] ** 2,  Q_sim[1] ** 2])
-
-# Simulated process noise covariance.
-R_sim = np.array([0.1, 0.5, np.deg2rad(1.)])
-R_t = np.diag([R_sim[0] ** 2, R_sim[1] ** 2, R_sim[2] ** 2])
-
 
 def confidence_ellipse(x, y, cov, ax, n_std=1.0, facecolor='none', **kwargs):
     """
@@ -92,11 +91,11 @@ def in_range(x_t, landmarks, max_range=MAX_RANGE):
     return idx
 
 
-def generate_trajectory(u_t, initial_state, duration, time_step, R=np.diag([0.0, 0.0, 0.0])):
+def generate_trajectory(u_t, initial_state, duration, time_step, M=np.diag([0.0, 0.0, 0.0])):
     t = 0.
     mu_t_h = [np.array(initial_state)]
     while duration >= t:
-        mu_t_h.append(g(u_t, mu_t_h[-1], delta_t=time_step, R=R))
+        mu_t_h.append(g(u_t, mu_t_h[-1], delta_t=time_step, M=M))
         t += time_step
     return mu_t_h
 

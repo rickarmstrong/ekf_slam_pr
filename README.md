@@ -39,3 +39,6 @@ Finally peeled the onion down far enough, by resolving these:
 * Non-zero measurement noise. Specifically, I had range variance set to zero. This is apparently Not 
 Good. In a hand-waving way, it's not totally surprising that a state estimation scheme based on the 
 assumption of perfectly Gaussian noise might go awry with zero-variance 'noise'.
+
+Ugh, my study list gets longer: 
+* https://web.mit.edu/2.166/www/handouts/. See lecture 7 for some good stuff about "O-plus and O-minus" notation.
