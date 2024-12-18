@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from ekf_slam import DELTA_T, LANDMARKS, STATE_DIMS, get_landmark, get_landmark_count, get_landmark_cov, range_bearing
-from ekf_slam.ekf import F_x, g, G_t_x, H_i_t, init_landmark
-from ekf_slam.sim import confidence_ellipse, MAX_RANGE, generate_trajectory, get_measurements, Q_t, R_t, SIM_TIME
+from ekf_slam.ekf import F_x, g, G_t_x, H_i_t, init_landmark, V_t_x
+from ekf_slam.sim import confidence_ellipse, MAX_RANGE, generate_trajectory, get_measurements,M_t, Q_t, SIM_TIME
 
 INITIAL_POSE = np.array([0., 0., 0.])
 ANIMATE_PLOT = True
@@ -35,17 +35,19 @@ def main():
     # Init history. We pre-generate ground-truth and dead-reckoning.
     mu_t_h = [mu_t_0]
     mu_t_bar_gt_h = generate_trajectory(u_t, mu_t_0, SIM_TIME, DELTA_T)  # Ground-truth.
-    mu_t_bar_dr_h = generate_trajectory(u_t, mu_t_0, SIM_TIME, DELTA_T, R_t)  # Dead-reckoning.
+    mu_t_bar_dr_h = generate_trajectory(u_t, mu_t_0, SIM_TIME, DELTA_T, M_t)  # Dead-reckoning.
     S_t_h = [S_t_0]
     z_h = []
 
     while SIM_TIME >= t:
-        ## Predict. ###
-        mu_t_bar = g(u_t, mu_t_h[-1], R=R_t)  # Prediction of next state with some additive noise.
+        # Predict motion.
+        mu_t_bar = g(u_t, mu_t_h[-1], M=M_t)  # Prediction of next state with some additive noise.
 
-        # Update predicted covariance.
+        # Predict covariance of the predicted motion.
         Fx = F_x(len(LANDMARKS))
         G_t = np.eye(STATE_DIMS) + Fx.T @ G_t_x(u_t, mu_t_h[-1]) @ Fx
+        V_t = V_t_x(u_t, mu_t_h[-1])
+        R_t = V_t @ M_t @ V_t.T
         S_t_bar = G_t @ S_t_h[-1] @ G_t.T + Fx.T @ R_t @ Fx
 
         # Observe.
@@ -158,7 +160,7 @@ def plot_one(k, **kwargs):
     cov = kwargs['S_t_h'][k][:2, :2]
     confidence_ellipse(float(mu[k, 0]), float(mu[k, 1]), cov, plt.gca(), n_std=3, edgecolor='red')
 
-    # Landmark measurementsv
+    # Landmark measurements.
     for j, z in kwargs['z_h'][k]:
         theta = mu[k, 2]
         zx = mu[k, 0] + z[0] * np.cos(z[1] + theta)
