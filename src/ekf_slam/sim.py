@@ -6,7 +6,7 @@ import numpy as np
 from ekf_slam.ekf import g, range_bearing
 
 SIM_TIME = 60.0  # simulation time [s].
-MAX_RANGE = 5.0 # Maximum observation range.
+MAX_RANGE = 10.0 # Maximum observation range.
 
 # Simulated control noise params.
 M_sim = np.array([1.0, np.deg2rad(0.1)])
