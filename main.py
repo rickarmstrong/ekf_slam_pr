@@ -12,8 +12,7 @@ from ekf_slam.vis import animate, plot_all
 from ekf_slam.sim import confidence_ellipse, MAX_RANGE, generate_trajectory, get_measurements,M_t, Q_t, SIM_TIME
 
 INITIAL_POSE = np.array([0., 0., 0.])
-ANIMATE_PLOT = False
-
+ANIMATE_PLOT = True
 
 
 def main():
