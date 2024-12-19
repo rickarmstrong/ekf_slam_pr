@@ -2,8 +2,8 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import numpy as np
 
-from ekf_slam import DELTA_T, LANDMARKS
-from ekf_slam.sim import MAX_RANGE, SIM_TIME
+from ekf_slam import get_landmark, get_landmark_cov, DELTA_T, LANDMARKS
+from ekf_slam.sim import confidence_ellipse, MAX_RANGE, SIM_TIME
 
 def animate(**kwargs):
     fig, ax = plt.subplots()
@@ -71,5 +71,39 @@ def animate(**kwargs):
         return gt_plot
 
     ani = animation.FuncAnimation(fig=fig, func=update, frames=len(gt), interval=1)
-    #        plt.show()
-    ani.save(filename="/home/rick/src/ekf_slam/EKF_SLAM.gif", writer="pillow")
+    plt.show()
+    # ani.save(filename="/home/rick/src/ekf_slam/EKF_SLAM.gif", writer="pillow")
+
+
+def plot_all(**kwargs):
+    fig, ax = plt.subplots()
+
+    # Ground-truth robot positions.
+    gt = np.vstack(kwargs['mu_t_bar_gt_h'])
+    ax.plot(gt[:, 0], gt[:, 1], '.b')
+
+    # Dead reckoning motion estimates.
+    dr = np.vstack(kwargs['mu_t_bar_dr_h'])
+    ax.plot(dr[:, 0], dr[:, 1], '.r')
+
+    # Ground-truth landmark positions.
+    ax.plot(LANDMARKS[:, 0], LANDMARKS[:, 1], 'xb')
+
+    # Robot position estimates.
+    mu = np.vstack(kwargs['mu_t_h'])
+    ax.plot(mu[:, 0], mu[:, 1], '+g')
+
+    # Final landmark position estimates.
+    for j in range(len(LANDMARKS)):
+        lm = get_landmark(mu[-1], j)
+        ax.plot(lm[0], lm[1], '*r')
+        confidence_ellipse(lm[0], lm[1], get_landmark_cov(kwargs['S_t_h'][-1], j), ax, n_std=3, edgecolor='red')
+
+    plt.axis('equal')
+    plt.grid(True)
+    plt.show()
+
+    # Plot theta, as a sanity check.
+    plt.figure(1)
+    plt.plot(mu[:, 2])
+    plt.show()
