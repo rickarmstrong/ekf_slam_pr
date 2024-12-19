@@ -4,18 +4,15 @@ Extended Kalman Filter SLAM example.
 Plotting and ground truth generation code borrowed from
 https://github.com/AtsushiSakai/PythonRobotics/tree/master/SLAM/EKFSLAM
 """
-import time
-
-import matplotlib.pyplot as plt
 import numpy as np
 
 from ekf_slam import DELTA_T, LANDMARKS, STATE_DIMS, get_landmark, get_landmark_count, get_landmark_cov, range_bearing
 from ekf_slam.ekf import F_x, g, G_t_x, H_i_t, init_landmark, V_t_x
+from ekf_slam.vis import animate, plot_all
 from ekf_slam.sim import confidence_ellipse, MAX_RANGE, generate_trajectory, get_measurements,M_t, Q_t, SIM_TIME
 
 INITIAL_POSE = np.array([0., 0., 0.])
 ANIMATE_PLOT = True
-
 
 
 def main():
@@ -37,7 +34,7 @@ def main():
     mu_t_bar_gt_h = generate_trajectory(u_t, mu_t_0, SIM_TIME, DELTA_T)  # Ground-truth.
     mu_t_bar_dr_h = generate_trajectory(u_t, mu_t_0, SIM_TIME, DELTA_T, M_t)  # Dead-reckoning.
     S_t_h = [S_t_0]
-    z_h = []
+    z_h = [[]]
 
     while SIM_TIME >= t:
         # Predict motion.
@@ -46,6 +43,9 @@ def main():
         # Predict covariance of the predicted motion.
         Fx = F_x(len(LANDMARKS))
         G_t = np.eye(STATE_DIMS) + Fx.T @ G_t_x(u_t, mu_t_h[-1]) @ Fx
+
+        # V_t: jacobian of the function that maps control space noise (v_t, omega_t)
+        # to state space (x, y, theta).
         V_t = V_t_x(u_t, mu_t_h[-1])
         R_t = V_t @ M_t @ V_t.T
         S_t_bar = G_t @ S_t_h[-1] @ G_t.T + Fx.T @ R_t @ Fx
@@ -86,98 +86,18 @@ def main():
         t += DELTA_T
 
     if ANIMATE_PLOT:
-        for k in range(len(mu_t_bar_gt_h)):
-            plot_one(
-                k,
-                mu_t_bar_gt_h=mu_t_bar_gt_h,
-                mu_t_bar_dr_h=mu_t_bar_dr_h,
-                landmarks_gt=LANDMARKS,
-                mu_t_h=mu_t_h,
-                S_t_h=S_t_h,
-                z_h=z_h)
+        animate(
+            mu_t_bar_gt_h=mu_t_bar_gt_h,
+            mu_t_bar_dr_h=mu_t_bar_dr_h,
+            mu_t_h=mu_t_h,
+            z_h=z_h)
     else:
         plot_all(
             mu_t_bar_gt_h=mu_t_bar_gt_h,
             mu_t_bar_dr_h=mu_t_bar_dr_h,
             landmarks_gt=LANDMARKS,
-            mu_t_h=mu_t_h)
-
-
-def plot_all(**kwargs):
-    fig, ax = plt.subplots()
-
-    # Ground-truth robot positions.
-    gt = np.vstack(kwargs['mu_t_bar_gt_h'])
-    ax.plot(gt[:, 0], gt[:, 1], '.b')
-
-    # Dead reckoning motion estimates.
-    dr = np.vstack(kwargs['mu_t_bar_dr_h'])
-    ax.plot(dr[:, 0], dr[:, 1], '.r')
-
-    # Ground-truth landmark positions.
-    ax.plot(LANDMARKS[:, 0], LANDMARKS[:, 1], 'xb')
-
-    # Robot position estimates.
-    mu = np.vstack(kwargs['mu_t_h'])
-    ax.plot(mu[:, 0], mu[:, 1], '+g')
-
-    # Final landmark position estimates.
-    # for j in range(len(LANDMARKS)):
-    #     lm = get_landmark(mu_t_h[-1], j)
-    #     ax.plot(lm[0], lm[1], '*r')
-    # confidence_ellipse(lm[0], lm[1], get_landmark_cov(S_t_h[-1], j), ax, n_std=3, edgecolor='red')
-
-    plt.axis('equal')
-    plt.grid(True)
-    plt.show()
-
-    # Plot theta.
-    plt.figure(1)
-    plt.plot(mu[:, 2])
-    plt.show()
-
-
-def plot_one(k, **kwargs):
-    # Ground-truth robot positions. These are known ahead of time;
-    # plot them all at once to set the correct 'zoom' of the plot.
-    gt = np.vstack(kwargs['mu_t_bar_gt_h'])
-    plt.plot(gt[:, 0], gt[:, 1], '.b')
-
-    # Same for the dead reckoning motion estimates...
-    dr = np.vstack(kwargs['mu_t_bar_dr_h'])
-    plt.plot(dr[:, 0], dr[:, 1], '.r')
-
-    # ...and the ground-truth landmark positions.
-    # Ground-truth landmark positions.
-    lm_gt = kwargs['landmarks_gt']
-    plt.plot(lm_gt[:, 0], lm_gt[:, 1], 'xb')
-
-    # Robot position estimates, from t=0 to now.
-    mu = np.vstack(kwargs['mu_t_h'])
-    plt.plot(mu[:k, 0], mu[:k, 1], '+g')
-
-    # Robot position error covariance estimates.
-    cov = kwargs['S_t_h'][k][:2, :2]
-    confidence_ellipse(float(mu[k, 0]), float(mu[k, 1]), cov, plt.gca(), n_std=3, edgecolor='red')
-
-    # Landmark measurements.
-    for j, z in kwargs['z_h'][k]:
-        theta = mu[k, 2]
-        zx = mu[k, 0] + z[0] * np.cos(z[1] + theta)
-        zy = mu[k, 1] + z[0] * np.sin(z[1] + theta)
-        plt.plot(zx, zy, '*g')
-
-    # Landmark covariance estimates for all non-zero landmarks.
-    for j in range(get_landmark_count(mu[k])):
-        lm = get_landmark(mu[k], j)
-        if not np.allclose(lm, np.zeros(2)):
-            confidence_ellipse(lm[0], lm[1], get_landmark_cov(kwargs['S_t_h'][k], j), plt.gca(), n_std=3, edgecolor='red')
-
-    plt.annotate(f"t = {(k * DELTA_T):.2f}", (0., 10.))
-    plt.annotate(f"MAX_RANGE = {MAX_RANGE}", (0., 8.))
-    plt.axis('equal')
-    plt.grid(True)
-    plt.pause(0.001)
+            mu_t_h=mu_t_h,
+            S_t_h=S_t_h)
 
 
 if __name__ == '__main__':
