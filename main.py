@@ -1,7 +1,7 @@
 """
 Extended Kalman Filter SLAM example.
 
-Plotting and ground truth generation code borrowed from
+Plotting and ground truth generation code inspired by
 https://github.com/AtsushiSakai/PythonRobotics/tree/master/SLAM/EKFSLAM
 """
 import numpy as np
@@ -9,9 +9,10 @@ import numpy as np
 from ekf_slam import DELTA_T, LANDMARKS, STATE_DIMS, get_landmark, get_landmark_count, get_landmark_cov, range_bearing
 from ekf_slam.ekf import F_x, g, G_t_x, H_i_t, init_landmark, V_t_x
 from ekf_slam.vis import animate, plot_all
-from ekf_slam.sim import confidence_ellipse, MAX_RANGE, generate_trajectory, get_measurements,M_t, Q_t, SIM_TIME
+from ekf_slam.sim import MAX_RANGE, generate_trajectory, get_measurements,M_t, Q_t, SIM_TIME
 
 INITIAL_POSE = np.array([0., 0., 0.])
+INITIAL_LM_COV = 1e6
 ANIMATE_PLOT = True
 
 
@@ -20,7 +21,7 @@ def main():
 
     # Full state column vector,length 3+2*N, where N is the number of landmarks.
     mu_t_0 = np.zeros(STATE_DIMS)  # Motion model-based state prediction. LaTeX: \bar \mu_t
-    S_t_0 = np.eye(STATE_DIMS) * 1000000 # LaTeX: \Sigma_t
+    S_t_0 = np.eye(STATE_DIMS) * INITIAL_LM_COV # LaTeX: \Sigma_t
 
     # Init pose and pose covariance.
     mu_t_0[:3] = INITIAL_POSE
@@ -90,6 +91,7 @@ def main():
             mu_t_bar_gt_h=mu_t_bar_gt_h,
             mu_t_bar_dr_h=mu_t_bar_dr_h,
             mu_t_h=mu_t_h,
+            S_t_h=S_t_h,
             z_h=z_h)
     else:
         plot_all(

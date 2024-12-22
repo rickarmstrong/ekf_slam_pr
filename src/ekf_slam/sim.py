@@ -1,6 +1,3 @@
-from matplotlib.patches import Ellipse
-import matplotlib.transforms as transforms
-
 import numpy as np
 
 from ekf_slam.ekf import g, range_bearing
@@ -16,59 +13,6 @@ M_t = np.diag([M_sim[0] ** 2, M_sim[1] ** 2])
 Q_sim = np.array([0.1, np.deg2rad(0.5)])
 Q_t = np.diag([Q_sim[0] ** 2,  Q_sim[1] ** 2])
 
-def confidence_ellipse(x, y, cov, ax, n_std=1.0, facecolor='none', **kwargs):
-    """
-    Create a plot of the covariance confidence ellipse cov at location (x, y).
-
-    Modified version of https://matplotlib.org/stable/gallery/statistics/confidence_ellipse.html
-
-    Parameters
-    ----------
-    x, y : float
-        The location of center of the ellipse.
-
-    cov : np.array, shape (2, 2)
-        The 2x2 covariance matrix we with to represent.
-
-    ax : matplotlib.axes.Axes
-        The Axes object to draw the ellipse into.
-
-    n_std : float
-        The number of standard deviations to determine the ellipse's radii.
-
-    facecolor : color used to fill the ellipse, forwarded to `~matplotlib.patches.Ellipse`.
-
-    **kwargs
-        Forwarded to `~matplotlib.patches.Ellipse`. In particular, 'edgecolor' is passed through.
-
-    Returns
-    -------
-    matplotlib.patches.Ellipse
-    """
-    # cov = np.cov(x, y)
-    pearson = cov[0, 1]/np.sqrt(cov[0, 0] * cov[1, 1])
-    # Using a special case to obtain the eigenvalues of this
-    # two-dimensional dataset.
-    ell_radius_x = np.sqrt(1 + pearson)
-    ell_radius_y = np.sqrt(1 - pearson)
-    ellipse = Ellipse((0, 0), width=ell_radius_x * 2, height=ell_radius_y * 2,
-                      facecolor=facecolor, **kwargs)
-
-    # Calculating the standard deviation of x from
-    # the square root of the variance and multiplying
-    # with the given number of standard deviations.
-    scale_x = np.sqrt(cov[0, 0]) * n_std
-
-    # calculating the standard deviation of y ...
-    scale_y = np.sqrt(cov[1, 1]) * n_std
-
-    tf = transforms.Affine2D() \
-        .rotate_deg(45) \
-        .scale(scale_x, scale_y) \
-        .translate(x, y)
-
-    ellipse.set_transform(tf + ax.transData)
-    return ax.add_patch(ellipse)
 
 def in_range(x_t, landmarks, max_range=MAX_RANGE):
     """
