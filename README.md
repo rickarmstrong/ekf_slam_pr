@@ -1,4 +1,10 @@
-### Resources
+# ekf_slam_pr
+Batch-mode EKF SLAM demo, (more-or-less) following the notation and flow of Ch. 7.4 from Probabilistic Robotics, 
+by Thrun et al.
+
+![EKF SLAM on Three Landmarks](doc/EKF_SLAM.gif)
+
+#### Resources and Notes
 
 Nice discussion of covariance in a geometric context:
 https://www.visiondummy.com/2014/04/geometric-interpretation-covariance-matrix/

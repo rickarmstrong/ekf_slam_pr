@@ -13,8 +13,12 @@ from ekf_slam.sim import MAX_RANGE, generate_trajectory, get_measurements,M_t, Q
 
 INITIAL_POSE = np.array([0., 0., 0.])
 INITIAL_LM_COV = 1e6
-ANIMATE_PLOT = True
 
+
+ANIMATE_PLOT = True
+# Set this to the path to which we should save a new animated .gif of the run.
+# E.g. '/home/rick/src/ekf_slam/EKF_SLAM.gif'. Set as '' to skip saving.
+SAVE_ANIMATED_PLOT_TO = ''
 
 def main():
     t = 0.0
@@ -92,7 +96,8 @@ def main():
             mu_t_bar_dr_h=mu_t_bar_dr_h,
             mu_t_h=mu_t_h,
             S_t_h=S_t_h,
-            z_h=z_h)
+            z_h=z_h,
+            save_plot_to=SAVE_ANIMATED_PLOT_TO)
     else:
         plot_all(
             mu_t_bar_gt_h=mu_t_bar_gt_h,

@@ -8,7 +8,7 @@ import numpy as np
 from ekf_slam import get_landmark, get_landmark_count, get_landmark_cov, DELTA_T, LANDMARKS
 from ekf_slam.sim import MAX_RANGE, SIM_TIME
 
-def animate(**kwargs):
+def animate(save_plot_to='', **kwargs):
     fig, ax = plt.subplots()
     ax.set_title(f"Duration: {SIM_TIME}s, Sensor Range: {MAX_RANGE}")
 
@@ -44,7 +44,7 @@ def animate(**kwargs):
     # Landmark measurements.
     zt_plot = ax.plot(0, 0, '*g', label="Landmark measurement")[0]
 
-    # Landmark position confidenc ellipses.
+    # Landmark position confidence ellipses.
     lm_cov_ellipses = []
     for j in range(get_landmark_count(mu[0])):
         lm_cov = get_landmark_cov(kwargs['S_t_h'][0], j)
@@ -100,7 +100,8 @@ def animate(**kwargs):
 
     ani = animation.FuncAnimation(fig=fig, func=update, frames=len(gt), interval=1)
     plt.show()
-    # ani.save(filename="/home/rick/src/ekf_slam/EKF_SLAM.gif", writer="pillow")
+    if save_plot_to != '':
+        ani.save(filename=save_plot_to, writer="pillow")
 
 
 def confidence_ellipse(x, y, cov, ax, n_std=1.0, facecolor='none', **kwargs):
