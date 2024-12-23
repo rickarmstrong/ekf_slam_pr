@@ -13,7 +13,7 @@ The simulation is represented graphically by the animation below.
 in a circular arc, according to a very simple velocity motion model (eq. 5.13 in PR, but with noise removed). 
 Noisy simulated measurements (range/bearing, odometry) are generated from this perfectly-circular arc.
 * The red trail represents a typical "dead-reckoning" estimate of the robot positions, one that might be derived from 
-noisy odometry measurements alone, without use of the landmark sensor.*
+noisy odometry measurements alone, without use of the landmark sensor.
 * The green trail represents the EKF-estimated trajectory, derived from a combination of odometry and landmark observations.
 * Green asterisks near the blue 'X' markers represent noisy measurements of in-range landmarks, re-projected into the map.
 the landmarks are, based on measurements
