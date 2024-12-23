@@ -4,6 +4,8 @@ Extended Kalman Filter SLAM example.
 Plotting and ground truth generation code inspired by
 https://github.com/AtsushiSakai/PythonRobotics/tree/master/SLAM/EKFSLAM
 """
+import time
+
 import numpy as np
 
 from ekf_slam import DELTA_T, LANDMARKS, STATE_DIMS, get_landmark, get_landmark_count, get_landmark_cov, range_bearing
@@ -21,6 +23,7 @@ ANIMATE_PLOT = True
 SAVE_ANIMATED_PLOT_TO = ''
 
 def main():
+    t_sim_start = time.time()
     t = 0.0
 
     # Full state column vector,length 3+2*N, where N is the number of landmarks.
@@ -89,6 +92,10 @@ def main():
         z_h.append(zip(j_i, z_i))
 
         t += DELTA_T
+
+    total_seconds = time.time() - t_sim_start
+    iterations = int(SIM_TIME / DELTA_T)
+    print(f"Ran {iterations} iterations in {total_seconds} seconds, rate: {SIM_TIME / DELTA_T / total_seconds} Hz")
 
     if ANIMATE_PLOT:
         animate(

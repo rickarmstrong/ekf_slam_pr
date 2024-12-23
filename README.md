@@ -1,50 +1,53 @@
 # ekf_slam_pr
 Batch-mode EKF SLAM demo, (more-or-less) following the notation and flow of Ch. 7.4 from Probabilistic Robotics, 
-by Thrun et al.
+by Thrun et al. (referred-to as "PR" below).
+
+Simulates a robotic sensor platform with a range/bearing sensor, and an odometer, moving in a 2D planar environment 
+containing three landmarks.  
+The range/bearing and odometry sensor measurements are noisy, and we simulate this with additive Gaussian noise. 
+The simulation is represented graphically by the animation below.
+
+### Highlights:
+* The blue 'X' markers are the _true_ positions of our landmarks.
+* The blue trail shows the _true_ trajectory of the platform. Our simulated platform moves at a constant velocity, 
+in a circular arc, according to a very simple velocity motion model (eq. 5.13 in PR, but with noise removed). 
+Noisy simulated measurements (range/bearing, odometry) are generated from this perfectly-circular arc.
+* The red trail represents a typical "dead-reckoning" estimate of the robot positions, one that might be derived from 
+noisy odometry measurements alone, without use of the landmark sensor.*
+* The green trail represents the EKF-estimated trajectory, derived from a combination of odometry and landmark observations.
+* Green asterisks near the blue 'X' markers represent noisy measurements of in-range landmarks, re-projected into the map.
+the landmarks are, based on measurements
+* The red ellipses represent 3-sigma covariance estimates associated with the platform, and the landmarks.
 
 ![EKF SLAM on Three Landmarks](doc/EKF_SLAM.gif)
 
-#### Resources and Notes
+### Of note:
+* The robot's initial position is known precisely at the start, with one landmark in-range. The error ellipses of the 
+robot and the landmark are too small to see. Since we have a landmark in-range, our location error remains low as we move.
+* As soon as the first landmark is out-of-range, the robot must rely on odometry alone, and so the location uncertainty 
+grows at a constant rate.
+* Once another landmark is acquired, the location uncertainty stops growing.
+* When the robot re-acquires the _first_ landmark, the lower uncertainty associated with our well-known start position 
+propagates to the robot and the other in-range landmark. This is known as "loop closure" in context of SLAM.
+* Shortcut #1: the red dead-reckoning trajectory is pre-generated from the ground truth (also pre-generated). It's _not_ 
+generated from the simulated noise values we used in the prediction step. Originally, I did it that way, but it just 
+cluttered-up the code.
+* Shortcut #2: the number of landmarks is known at the start. EKF SLAM can accommodate an arbitrary number of landmarks, 
+adding them on-the-fly, but requires additional landmark management machinery. For demonstration/learning purposes, it 
+was easier to use a fixed-size state vector.
+* Shortcut #3: no attempt was made at efficiency. The goal was to emulate the algorithm as described in PR Table 10.1. 
+There are numerous opportunities for speed gains. 
 
-Nice discussion of covariance in a geometric context:
-https://www.visiondummy.com/2014/04/geometric-interpretation-covariance-matrix/
+### Give it a Spin
+Tested on Python 3.10.
+```angular2html
+git clone (this repo)
+cd ekf_slam_pr
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -r requirements.txt
+pip install -e .
+python3 main.py
+```
 
-A fellow traveler attempting the same thing:
-https://henryomd.blogspot.com/2017/06/understanding-ekf-slam.html
-
-Another fellow traveler, confused by the fact that x_t is not directly updated by measurements.
-https://stackoverflow.com/questions/61486107/how-does-covariance-matrix-p-in-kalman-filter-get-updated-in-relation-to-measu
-
-Gazebo simulation issues. Can't build/run the Create 3 Gazebo sim stuff in `jammy`+`humble`+`harmonic`. 
-Works on `noble`+`jazzy`+`harmonic`. See my comment here:
-https://github.com/iRobotEducation/create3_sim/issues/234, and this page:
-https://gazebosim.org/docs/latest/ros_installation/#summary-of-compatible-ros-and-gazebo-combinations
-TLDR: Workaround is to start the simulation one part at a time, sim.launch.py, start the simulation by hitting the run 
-button in Gazebo, create3_spawn.launch.py, then create3_gz_nodes.launch.py.
-
-Excellent discussion of the details. In particular, demonstrates rotating Q_t before adding:
-https://www.sush.one/docs/SLAM/EKF.html
-https://www.sush.one/docs/SLAM/EKF.html#prediction-step-code
-
-
-Plot an ellipse: https://stackoverflow.com/questions/10952060/plot-ellipse-with-matplotlib-pyplot
-
-
-Some discoveries while contemplating angle wrapping in an EKF (searching on "EKF normalize angles"):
-A paper specifically about angle wrapping in EKFs: https://arxiv.org/pdf/1708.05551
-
-A filtering library written in Python: https://filterpy.readthedocs.io/en/latest/index.html
-
-A post that makes me think maybe I'm doing the z-z_hat thing wrong:
-https://robotics.stackexchange.com/questions/17873/kalman-filter-how-to-solve-angles-near-pi
-
-12/15/24: IT WORKS, or at least, it's _starting_ to look reasonable. We were blowing-up and diverging, 
-particularly with more than two landmarks and a range such that we always had all landmarks in-sight. 
-Finally peeled the onion down far enough, by resolving these:
-* Normalized pose and measurement angles. Tests and refactoring to reduce code duplication were key.
-* Non-zero measurement noise. Specifically, I had range variance set to zero. This is apparently Not 
-Good. In a hand-waving way, it's not totally surprising that a state estimation scheme based on the 
-assumption of perfectly Gaussian noise might go awry with zero-variance 'noise'.
-
-Ugh, my study list gets longer: 
-* https://web.mit.edu/2.166/www/handouts/. See lecture 7 for some good stuff about "O-plus and O-minus" notation.
+[Resources and Notes](doc/resources_and_notes.md): assorted info and notes compiled while working on this.
