@@ -46,6 +46,7 @@ cd ekf_slam_pr
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -r requirements.txt
+sudo apt install libxcb-cursor-dev
 pip install -e .
 python3 main.py
 ```
