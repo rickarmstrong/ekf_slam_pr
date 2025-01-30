@@ -19,7 +19,7 @@ INITIAL_LM_COV = 1e6
 
 ANIMATE_PLOT = True
 # Set this to the path to which we should save a new animated .gif of the run.
-# E.g. '/home/rick/src/ekf_slam/EKF_SLAM.gif'. Set as '' to skip saving.
+# E.g. '/home/rick/src/ekf_slam/EKF_SLAM.gif'. Set to '' to skip saving.
 SAVE_ANIMATED_PLOT_TO = ''
 
 def main():
