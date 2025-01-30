@@ -39,7 +39,7 @@ was easier to use a fixed-size state vector.
 There are numerous opportunities for speed gains. 
 
 ### Give it a Spin
-Tested on Python 3.10.
+Tested on Python 3.10, 3.12.
 ```angular2html
 git clone (this repo)
 cd ekf_slam_pr
