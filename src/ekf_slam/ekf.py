@@ -108,13 +108,14 @@ def G_t_x(u_t, mu, delta_t=DELTA_T):
         [0., 0., 0.]])
 
 
-def H_i_t(d, q, j, n_landmarks):
-    d_x = d[0]
-    d_y = d[1]
-    sqrt_q = np.sqrt(q)
-    H_low = 1. / q * np.array([
-        [-sqrt_q * d_x, -sqrt_q * d_y,  0,  sqrt_q * d_x,   sqrt_q * d_y],
-        [d_y,           -d_x,           -q, -d_y,           d_x]
+def H_i_t(j, n_landmarks):
+    """Return the high-dimensional Jacobian of the sensor model.
+    In this simulation, our sensor is cartesian, i.e. the model is
+    simply: x=x, y=y.
+    """
+    H_low = np.array([
+        [1, 0.,  0.,  0., 0.],
+        [0., 1., 0., 0., 0.]
     ])
     return H_low @ F_x_j(j, n_landmarks)
 

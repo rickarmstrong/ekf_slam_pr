@@ -5,12 +5,12 @@ from ekf_slam.ekf import g, range_bearing
 SIM_TIME = 60.0  # simulation time [s].
 MAX_RANGE = 10.0 # Maximum observation range.
 
-# Simulated control noise params.
+# Simulated control noise params (linear and angular velocity).
 M_sim = np.array([1.0, np.deg2rad(0.1)])
 M_t = np.diag([M_sim[0] ** 2, M_sim[1] ** 2])
 
-# Simulated measurement noise params. stdev of range and bearing measurements noise.
-Q_sim = np.array([0.1, np.deg2rad(0.5)])
+# Simulated measurement noise params. stdev of cartesian (x, y) measurement noise.
+Q_sim = np.array([0.1, 0.1])
 Q_t = np.diag([Q_sim[0] ** 2,  Q_sim[1] ** 2])
 
 
@@ -47,26 +47,30 @@ def generate_trajectory(u_t, initial_state, duration, time_step, M=np.diag([0.0,
 def get_measurements(x_t, landmarks, max_range, Q=Q_t):
     """
     Return a list of simulated landmark observations.
+
+    Assume our simulated sensor has a 360-degree view, and knows how to transform robot-frame
+    observations into global coordinates. Our simulated landmark locations are already known
+    in the global frame, so no need to do that transformation here.
     Args:
         x_t : array-like
-            2D pose: (x, y, theta).
+            2D pose: (x, y).
         landmarks :
             Ground-truth landmarks. shape == (n, 2), where n is the number of 2D landmarks.
         max_range :
         Q : array-like
-            Noise params for range, bearing.
+            Noise params for x, y.
 
     Returns:
         j_i: Indices of landmarks in-range.
-        z_i: An (optionally noise-corrupted) range-bearing measurement (r, phi)
+        z_i: An (optionally noise-corrupted) cartesian measurement (x, y)
             of each landmark that is within range, or None if no landmarks are in range.
-            phi is in the range [-pi, pi]. Measurement is expressed in the robot frame.
+            Measurement is expressed in the global frame.
     """
     rng = np.random.default_rng()
     z_i = []
     j_i = in_range(x_t[:2], landmarks, max_range)
     for j in j_i:
-        z = range_bearing(x_t, landmarks[j])
+        z = landmarks[j]
         z[0] += rng.normal(scale=np.sqrt(Q[0][0]))
         z[1] += rng.normal(scale=np.sqrt(Q[1][1]))
         z_i.append(z)

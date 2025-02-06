@@ -63,15 +63,13 @@ def main():
 
         # Correct, based on available measurements.
         for j, z in zip(j_i, z_i):
-            lm = get_landmark(mu_t_bar, j)
-            if np.allclose(lm, np.zeros(2)):
+            z_hat = get_landmark(mu_t_bar, j)
+            if np.allclose(z_hat, np.zeros(2)):
                 init_landmark(mu_t_bar, j, z)
 
-            # Get the expected measurement.
-            z_hat = range_bearing(mu_t_bar[:3], lm)
-
-            # Get the Jacobian of the expected measurement.
-            H_i_t_j = H_i_t(lm - mu_t_bar[:2], z_hat[0] ** 2, j, get_landmark_count(mu_t_bar))
+            # Get the Jacobian of the expected measurement (trivial for a
+            # cartesian sensor).
+            H_i_t_j = H_i_t(j, get_landmark_count(mu_t_bar))
 
             # Kalman gain.
             try:
