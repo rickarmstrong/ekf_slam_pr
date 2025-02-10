@@ -137,9 +137,6 @@ def test_in_range():
 
 def test_get_measurements_zero_noise():
     """Call get_measurements() with the sensor rotated to several orientations.
-    In each case, we should simply get back the measured landmarks, in the global
-    frame, since we're simulating a cartesian sensor that knows how to do the
-    sensor-global transformation.
     """
     # x, y, theta: at origin, looking down the x-axis.
     x_t = np.array([0., 0., 0.])
@@ -155,7 +152,6 @@ def test_get_measurements_zero_noise():
         [1., 0.],
         [0., 1.]
     ])
-
     j_i, z_i_t = get_measurements(x_t, landmarks, max_range=1.0, Q=np.zeros((2, 2)))
     assert np.allclose(np.array(z_i_t), expected)
 
@@ -167,11 +163,19 @@ def test_get_measurements_zero_noise():
     # Rotate the sensor to point up the y-axis.
     x_t = np.array([0., 0., np.pi / 2.])
     j_i, z_i_t = get_measurements(x_t, landmarks, max_range=1.0, Q=np.zeros((2, 2)))
+    expected = np.array([
+        [0., -1.],
+        [1., 0.]
+    ])
     assert np.allclose(np.array(z_i_t), expected)
 
     # Rotate the sensor to point down the negative x-axis.
-    x_t = np.array([0., 0., -np.pi / 2.])
+    x_t = np.array([0., 0., -np.pi])
     j_i, z_i_t = get_measurements(x_t, landmarks, max_range=1.0, Q=np.zeros((2, 2)))
+    expected = np.array([
+        [-1., 0.],
+        [0., -1.]
+    ])
     assert np.allclose(np.array(z_i_t), expected)
 
 

@@ -1,6 +1,6 @@
 import numpy as np
 
-from ekf_slam.ekf import g, range_bearing
+from ekf_slam.ekf import g, get_expected_measurement
 
 SIM_TIME = 60.0  # simulation time [s].
 MAX_RANGE = 10.0 # Maximum observation range.
@@ -48,12 +48,10 @@ def get_measurements(x_t, landmarks, max_range, Q=Q_t):
     """
     Return a list of simulated landmark observations.
 
-    Assume our simulated sensor has a 360-degree view, and knows how to transform robot-frame
-    observations into global coordinates. Our simulated landmark locations are already known
-    in the global frame, so no need to do that transformation here.
+    Assume our simulated sensor has a 360-degree view and range limited to max_range.
     Args:
         x_t : array-like
-            2D pose: (x, y).
+            3D pose: (x, y, theta).
         landmarks :
             Ground-truth landmarks. shape == (n, 2), where n is the number of 2D landmarks.
         max_range :
@@ -64,14 +62,36 @@ def get_measurements(x_t, landmarks, max_range, Q=Q_t):
         j_i: Indices of landmarks in-range.
         z_i: An (optionally noise-corrupted) cartesian measurement (x, y)
             of each landmark that is within range, or None if no landmarks are in range.
-            Measurement is expressed in the global frame.
+            Measurement is expressed in the robot (sensor) frame.
     """
+    # First, calculate the homogeneous map->sensor transform:
+    # The sensor->map frame transformation is given by the block matrix
+    # [ R t ]
+    # [ 0 1 ],
+    # where R is the 2x2 rotation and t is the translation (x, y).T of the sensor in the map frame.
+    # Then, the inverse transform is
+    # [ inv(R) -inv(R)@t ]
+    # [     0       1    ]
+    ct = np.cos(x_t[2])
+    st = np.sin(x_t[2])
+    b_T_m = np.array([
+        [ct,    st,     -x_t[0] * ct - x_t[1] * st],
+        [-st,   ct,     x_t[0] * st - x_t[1] * ct ],
+        [0.,    0.,                 1.            ]
+    ])
+
+    # Generate simulated sensor noise.
     rng = np.random.default_rng()
+    noise = np.array([
+            rng.normal(scale=np.sqrt(Q[0][0])),
+            rng.normal(scale=np.sqrt(Q[1][1])),
+            0.
+    ])
+
+    # Transform the (known) landmark positions to the sensor frame, and add noise.
     z_i = []
     j_i = in_range(x_t[:2], landmarks, max_range)
     for j in j_i:
-        z = landmarks[j]
-        z[0] += rng.normal(scale=np.sqrt(Q[0][0]))
-        z[1] += rng.normal(scale=np.sqrt(Q[1][1]))
-        z_i.append(z)
+        z = b_T_m @ np.append(landmarks[j], 1.) + noise
+        z_i.append(z[:2])
     return j_i, z_i
