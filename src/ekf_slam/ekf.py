@@ -2,7 +2,7 @@ from math import cos, sin
 
 import numpy as np
 
-from ekf_slam import get_landmark, get_landmark_count, DELTA_T, LM_DIMS, POSE_DIMS, jj, range_bearing
+from ekf_slam import get_landmark, get_landmark_count, DELTA_T, LM_DIMS, POSE_DIMS, jj
 
 
 def F_x(n_landmarks):
@@ -92,6 +92,19 @@ def g(u_t, mu, delta_t=DELTA_T, M=np.diag([0.0, 0.0])):
     return mu_next
 
 
+def get_expected_measurement(mu_t_bar, j):
+    x_t = mu_t_bar[:3]
+    theta = x_t[2]
+    mu_j = np.append(get_landmark(mu_t_bar, j), 1.)
+    ct = np.cos(theta)
+    st = np.sin(theta)
+    b_T_m = np.array([
+        [ct,    st,     -x_t[0] * ct - x_t[1] * st],
+        [-st,   ct,     x_t[0] * st - x_t[1] * ct ],
+        [0.,    0.,                 1.            ]
+    ])
+    return (b_T_m @ mu_j)[:2]
+
 def G_t_x(u_t, mu, delta_t=DELTA_T):
     """Return the 3x3 Jacobian of the motion model function g()."""
     v_t = u_t[0]
@@ -108,14 +121,24 @@ def G_t_x(u_t, mu, delta_t=DELTA_T):
         [0., 0., 0.]])
 
 
-def H_i_t(j, n_landmarks):
+def H_i_t(mu_t, j, n_landmarks):
     """Return the high-dimensional Jacobian of the sensor model.
-    In this simulation, our sensor is cartesian, i.e. the model is
-    simply: x=x, y=y.
     """
+    mu_j = get_landmark(mu_t, j)
+    theta = mu_t[2]
+    H_0_0 = -np.cos(theta)
+    H_0_1 = -np.sin(theta)
+    H_0_2 = -mu_j[0] * np.sin(theta) + mu_j[1] * np.cos(theta) + mu_t[0] * np.sin(theta) + mu_t[1] * np.cos(theta)
+    H_0_3 = np.cos(theta)
+    H_0_4 = np.sin(theta)
+    H_1_0 = np.sin(theta)
+    H_1_1 = -np.cos(theta)
+    H_1_2 = -mu_j[0] * np.cos(theta) - mu_j[1] * np.sin(theta) + mu_t[0] * np.cos(theta) + mu_t[1] * np.sin(theta)
+    H_1_3 = -np.sin(theta)
+    H_1_4 = np.cos(theta)
     H_low = np.array([
-        [1, 0.,  0.,  0., 0.],
-        [0., 1., 0., 0., 0.]
+        [H_0_0, H_0_1, H_0_2, H_0_3, H_0_4],
+        [H_1_0, H_1_1, H_1_2, H_1_3, H_1_4]
     ])
     return H_low @ F_x_j(j, n_landmarks)
 

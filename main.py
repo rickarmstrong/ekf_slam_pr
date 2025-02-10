@@ -8,19 +8,20 @@ import time
 
 import numpy as np
 
-from ekf_slam import DELTA_T, LANDMARKS, STATE_DIMS, get_landmark, get_landmark_count, get_landmark_cov, range_bearing
-from ekf_slam.ekf import F_x, g, G_t_x, H_i_t, init_landmark, V_t_x
+from ekf_slam import DELTA_T, LANDMARKS, STATE_DIMS, get_landmark, get_landmark_count
+from ekf_slam.ekf import F_x, g, get_expected_measurement, G_t_x, H_i_t, init_landmark, V_t_x
 from ekf_slam.vis import animate, plot_all
-from ekf_slam.sim import MAX_RANGE, generate_trajectory, get_measurements,M_t, Q_t, SIM_TIME
+from ekf_slam.sim import MAX_RANGE, generate_trajectory, get_measurements, M_t, Q_t, SIM_TIME
 
 INITIAL_POSE = np.array([0., 0., 0.])
 INITIAL_LM_COV = 1e6
 
 
-ANIMATE_PLOT = True
+ANIMATE_PLOT = False
 # Set this to the path to which we should save a new animated .gif of the run.
 # E.g. '/home/rick/src/ekf_slam/EKF_SLAM.gif'. Set to '' to skip saving.
 SAVE_ANIMATED_PLOT_TO = ''
+
 
 def main():
     t_sim_start = time.time()
@@ -58,18 +59,19 @@ def main():
         R_t = V_t @ M_t @ V_t.T
         S_t_bar = G_t @ S_t_h[-1] @ G_t.T + Fx.T @ R_t @ Fx
 
-        # Observe.
+        # Observe. Measurements are expressed in the sensor frame.
         j_i, z_i = get_measurements(mu_t_bar_gt_h[int(t / DELTA_T)], LANDMARKS, MAX_RANGE, Q=Q_t)
 
         # Correct, based on available measurements.
         for j, z in zip(j_i, z_i):
-            z_hat = get_landmark(mu_t_bar, j)
-            if np.allclose(z_hat, np.zeros(2)):
+            # If we have not yet observed this landmark,
+            # use our measurement as our initial estimate.
+            mu_t_j = get_landmark(mu_t_bar, j)
+            if np.allclose(mu_t_j, np.zeros(2)):
                 init_landmark(mu_t_bar, j, z)
 
-            # Get the Jacobian of the expected measurement (trivial for a
-            # cartesian sensor).
-            H_i_t_j = H_i_t(j, get_landmark_count(mu_t_bar))
+            # Get the Jacobian of the expected measurement.
+            H_i_t_j = H_i_t(mu_t_bar, j, get_landmark_count(mu_t_bar))
 
             # Kalman gain.
             try:
@@ -80,6 +82,7 @@ def main():
                 continue
 
             # Update state and covariance estimates for this observation.
+            z_hat = get_expected_measurement(mu_t_bar, j)
             mu_t_bar = mu_t_bar + K_i_t @ (z - z_hat)
             mu_t_bar[2] = np.atan2(np.sin(mu_t_bar[2]), np.cos(mu_t_bar[2]))
             S_t_bar = (np.eye(STATE_DIMS) - K_i_t @ H_i_t_j) @ S_t_bar

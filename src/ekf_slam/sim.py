@@ -1,6 +1,6 @@
 import numpy as np
 
-from ekf_slam.ekf import g, get_expected_measurement
+from ekf_slam.ekf import g
 
 SIM_TIME = 60.0  # simulation time [s].
 MAX_RANGE = 10.0 # Maximum observation range.
@@ -72,8 +72,9 @@ def get_measurements(x_t, landmarks, max_range, Q=Q_t):
     # Then, the inverse transform is
     # [ inv(R) -inv(R)@t ]
     # [     0       1    ]
-    ct = np.cos(x_t[2])
-    st = np.sin(x_t[2])
+    theta = x_t[2]
+    ct = np.cos(theta)
+    st = np.sin(theta)
     b_T_m = np.array([
         [ct,    st,     -x_t[0] * ct - x_t[1] * st],
         [-st,   ct,     x_t[0] * st - x_t[1] * ct ],
