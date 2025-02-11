@@ -79,9 +79,8 @@ def animate(save_plot_to='', **kwargs):
         zx = []
         zy = []
         for idx, zh in kwargs['z_h'][k]:
-            theta = mu[k, 2]
-            lm_x = mu[k, 0] + zh[0] * np.cos(zh[1] + theta)
-            lm_y = mu[k, 1] + zh[0] * np.sin(zh[1] + theta)
+            lm_x = zh[0]
+            lm_y = zh[1]
             zx.append(lm_x)
             zy.append(lm_y)
 

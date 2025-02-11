@@ -10,6 +10,7 @@ import numpy as np
 
 from ekf_slam import DELTA_T, LANDMARKS, STATE_DIMS, get_landmark, get_landmark_count
 from ekf_slam.ekf import F_x, g, get_expected_measurement, G_t_x, H_i_t, init_landmark, V_t_x
+from ekf_slam.frames import sensor_to_map
 from ekf_slam.vis import animate, plot_all
 from ekf_slam.sim import MAX_RANGE, generate_trajectory, get_measurements, M_t, Q_t, SIM_TIME
 
@@ -61,6 +62,7 @@ def main():
 
         # Observe. Measurements are expressed in the sensor frame.
         j_i, z_i = get_measurements(mu_t_bar_gt_h[int(t / DELTA_T)], LANDMARKS, MAX_RANGE, Q=Q_t)
+        z_map = [sensor_to_map(z, mu_t_bar[:3]) for z in z_i]  # Save these for later visualization.
 
         # Correct, based on available measurements.
         for j, z in zip(j_i, z_i):
@@ -90,7 +92,7 @@ def main():
         # Store history, for access to last state, and for plotting.
         mu_t_h.append(np.array(mu_t_bar))  # mu_t = mu_t_bar.
         S_t_h.append(np.array(S_t_bar))  # S_t = S_t_bar.
-        z_h.append(zip(j_i, z_i))
+        z_h.append(zip(j_i, z_map))
 
         t += DELTA_T
 
