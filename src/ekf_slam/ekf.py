@@ -3,6 +3,7 @@ from math import cos, sin
 import numpy as np
 
 from ekf_slam import get_landmark, get_landmark_count, DELTA_T, LM_DIMS, POSE_DIMS, jj
+from ekf_slam.frames import map_to_sensor
 
 
 def F_x(n_landmarks):
@@ -93,17 +94,10 @@ def g(u_t, mu, delta_t=DELTA_T, M=np.diag([0.0, 0.0])):
 
 
 def get_expected_measurement(mu_t_bar, j):
-    x_t = mu_t_bar[:3]
-    theta = x_t[2]
-    mu_j = np.append(get_landmark(mu_t_bar, j), 1.)
-    ct = np.cos(theta)
-    st = np.sin(theta)
-    b_T_m = np.array([
-        [ct,    st,     -x_t[0] * ct - x_t[1] * st],
-        [-st,   ct,     x_t[0] * st - x_t[1] * ct ],
-        [0.,    0.,                 1.            ]
-    ])
-    return (b_T_m @ mu_j)[:2]
+    """Given the current state vector, return the expected measurement of landmark j
+    which is expressed in the map frame, in the sensor frame."""
+    return map_to_sensor(get_landmark(mu_t_bar, j), mu_t_bar[:3])
+
 
 def G_t_x(u_t, mu, delta_t=DELTA_T):
     """Return the 3x3 Jacobian of the motion model function g()."""

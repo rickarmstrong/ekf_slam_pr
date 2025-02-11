@@ -1,6 +1,7 @@
 import numpy as np
 
 from ekf_slam.ekf import g
+from ekf_slam.frames import map_to_sensor
 
 SIM_TIME = 60.0  # simulation time [s].
 MAX_RANGE = 10.0 # Maximum observation range.
@@ -64,35 +65,17 @@ def get_measurements(x_t, landmarks, max_range, Q=Q_t):
             of each landmark that is within range, or None if no landmarks are in range.
             Measurement is expressed in the robot (sensor) frame.
     """
-    # First, calculate the homogeneous map->sensor transform:
-    # The sensor->map frame transformation is given by the block matrix
-    # [ R t ]
-    # [ 0 1 ],
-    # where R is the 2x2 rotation and t is the translation (x, y).T of the sensor in the map frame.
-    # Then, the inverse transform is
-    # [ inv(R) -inv(R)@t ]
-    # [     0       1    ]
-    theta = x_t[2]
-    ct = np.cos(theta)
-    st = np.sin(theta)
-    b_T_m = np.array([
-        [ct,    st,     -x_t[0] * ct - x_t[1] * st],
-        [-st,   ct,     x_t[0] * st - x_t[1] * ct ],
-        [0.,    0.,                 1.            ]
-    ])
-
     # Generate simulated sensor noise.
     rng = np.random.default_rng()
     noise = np.array([
             rng.normal(scale=np.sqrt(Q[0][0])),
             rng.normal(scale=np.sqrt(Q[1][1])),
-            0.
     ])
 
     # Transform the (known) landmark positions to the sensor frame, and add noise.
     z_i = []
     j_i = in_range(x_t[:2], landmarks, max_range)
     for j in j_i:
-        z = b_T_m @ np.append(landmarks[j], 1.) + noise
-        z_i.append(z[:2])
+        z = map_to_sensor(landmarks[j], x_t) + noise
+        z_i.append(z)
     return j_i, z_i
