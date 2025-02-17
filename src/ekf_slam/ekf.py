@@ -160,6 +160,10 @@ def init_landmark(mu_t, j, z):
 
 
 def V_t_x(u_t, mu, delta_t=DELTA_T):
+    """ Return the Jacobian of the function that maps control space noise (v_t, omega_t) to state space (x, y, theta).
+    From PR ch. 7.4, eq. 7.11: this 'is the derivative of the motion function g w.r.t. the motion parameters, evaluated
+    at u_t, and mu_t-1.
+    """
     v_t = u_t[0]
     w_t = u_t[1]  # "omega_t"
     theta = mu[2]

@@ -46,12 +46,15 @@ def main():
     S_t_h = [S_t_0]
     z_h = [[]]
 
+    # Matrix that maps from 3D pose space [x  y  theta].T to the full EKF
+    # state space [x_R m].T, shape == (2N+3,).
+    Fx = F_x(len(LANDMARKS))
+
     while SIM_TIME >= t:
         # Predict motion.
         mu_t_bar = g(u_t, mu_t_h[-1], M=M_t)  # Prediction of next state with some additive noise.
 
         # Predict covariance of the predicted motion.
-        Fx = F_x(len(LANDMARKS))
         G_t = np.eye(STATE_DIMS) + Fx.T @ G_t_x(u_t, mu_t_h[-1]) @ Fx
 
         # V_t: jacobian of the function that maps control space noise (v_t, omega_t)
