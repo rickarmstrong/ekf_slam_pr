@@ -1,5 +1,6 @@
 import matplotlib.animation as animation
 from matplotlib.patches import Ellipse
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.transforms as transforms
 
@@ -9,12 +10,14 @@ from ekf_slam import get_landmark, get_landmark_count, get_landmark_cov, DELTA_T
 from ekf_slam.sim import MAX_RANGE, SIM_TIME
 
 def animate(save_plot_to='', **kwargs):
-    fig, ax = plt.subplots()
-    ax.set_title(f"Duration: {SIM_TIME}s, Sensor Range: {MAX_RANGE}")
+    # Show two subplots, side-by-side: left plot is a 2D map, right plot
+    # is a visualization of the covariance matrix (sigma).
+    fig, ax = plt.subplots(1, 2)
+    ax[0].set_title(f"Duration: {SIM_TIME}s, Sensor Range: {MAX_RANGE}")
 
     # Ground-truth robot positions.
     gt = np.vstack(kwargs['mu_t_bar_gt_h'])
-    gt_plot = ax.plot(gt[0, 0], gt[0, 1], '.b', label="Ground-truth")[0]
+    gt_plot = ax[0].plot(gt[0, 0], gt[0, 1], '.b', label="Ground-truth")[0]
 
     # Use ground-truth bounds plus a little more, for the plot bounds.
     xmin = np.min(gt[:, 0])
@@ -24,37 +27,43 @@ def animate(save_plot_to='', **kwargs):
     extra = 0.5
     xextra = np.abs(xmax * extra)
     yextra = np.abs(ymax * extra)
-    ax.set(xlim=[xmin - xextra, xmax + xextra], ylim=[ymin - yextra, ymax + yextra], aspect='equal')
+    ax[0].set(xlim=[xmin - xextra, xmax + xextra], ylim=[ymin - yextra, ymax + yextra], aspect='equal')
 
     # Dead reckoning motion estimates.
     dr = np.vstack(kwargs['mu_t_bar_dr_h'])
-    dr_plot = ax.plot(dr[0, 0], dr[0, 1], '.r', label="Dead-reckoning")[0]
+    dr_plot = ax[0].plot(dr[0, 0], dr[0, 1], '.r', label="Dead-reckoning")[0]
 
     # Ground-truth landmark positions.
-    ax.plot(LANDMARKS[:, 0], LANDMARKS[:, 1], 'xb')
+    ax[0].plot(LANDMARKS[:, 0], LANDMARKS[:, 1], 'xb')
 
     # Robot position estimates.
     mu = np.vstack(kwargs['mu_t_h'])
-    mu_plot = ax.plot(mu[:, 0], mu[:, 1], '+g', label="EKF estimate")[0]
+    mu_plot = ax[0].plot(mu[:, 0], mu[:, 1], '+g', label="EKF estimate")[0]
 
     # Robot position confidence ellipses.
     pos_cov_ellipse = Ellipse((0, 0), width=1., height=1., facecolor='none', edgecolor='red')
-    ax.add_patch(pos_cov_ellipse)
+    ax[0].add_patch(pos_cov_ellipse)
 
     # Landmark measurements.
-    zt_plot = ax.plot(0, 0, '*g', label="Landmark measurement")[0]
+    zt_plot = ax[0].plot(0, 0, '*g', label="Landmark measurement")[0]
 
     # Landmark position confidence ellipses.
     lm_cov_ellipses = []
     for j in range(get_landmark_count(mu[0])):
         lm_cov = get_landmark_cov(kwargs['S_t_h'][0], j)
         ell = Ellipse((0, 0), width=lm_cov[0, 0], height=lm_cov[1, 1], facecolor='none', edgecolor='red')
-        lm_cov_ellipses.append(ax.add_patch(ell))
+        lm_cov_ellipses.append(ax[0].add_patch(ell))
 
     # Annotations.
-    k_text = ax.text(0., 10., f"")
+    k_text = ax[0].text(0., 10., f"")
 
-    ax.legend()
+    # Covariance matrix visualization.
+    cov_mat_plot = ax[1].imshow(kwargs['S_t_h'][0],
+                                norm=mpl.colors.Normalize(vmin=-1, vmax=1, clip=True),
+                                interpolation='none')
+    ax[1].set_title(f"Covariance Matrix")
+
+    ax[0].legend()
 
     def update(k):
         # Ground-truth.
@@ -73,7 +82,7 @@ def animate(save_plot_to='', **kwargs):
         rx, ry, tf = get_ellipse_params(mu[k][0], mu[k][1], kwargs['S_t_h'][k][:2, :2], 3.0)
         pos_cov_ellipse.width = rx
         pos_cov_ellipse.height = ry
-        pos_cov_ellipse.set_transform(tf + ax.transData)
+        pos_cov_ellipse.set_transform(tf + ax[0].transData)
 
         # Landmark observations.
         zx = []
@@ -88,12 +97,14 @@ def animate(save_plot_to='', **kwargs):
             rx, ry, tf = get_ellipse_params(lm_x, lm_y, get_landmark_cov(kwargs['S_t_h'][k], idx), 3.0)
             lm_cov_ellipses[idx].width = rx
             lm_cov_ellipses[idx].height = ry
-            lm_cov_ellipses[idx].set_transform(tf + ax.transData)
+            lm_cov_ellipses[idx].set_transform(tf + ax[0].transData)
         if len(zx) > 0:
             zt_plot.set_xdata(zx)
             zt_plot.set_ydata(zy)
 
         k_text.set_text(f"t = {(k * DELTA_T):.2f}")
+
+        cov_mat_plot.set_data(kwargs['S_t_h'][k])
 
         return gt_plot
 
