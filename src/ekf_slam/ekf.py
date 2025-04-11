@@ -1,4 +1,5 @@
 from math import cos, sin
+import sys
 
 import numpy as np
 
@@ -69,7 +70,7 @@ def g(u_t, mu, delta_t=DELTA_T, M=np.diag([0.0, 0.0])):
         Shape == (STATE_DIMS,).
     """
     v_t = u_t[0]
-    omega_t = u_t[1]
+    omega_t = max(u_t[1], np.finfo(float).eps)  # Avoid div/zero.
     theta = mu[2]
 
     # Add control noise.
@@ -102,7 +103,7 @@ def get_expected_measurement(mu_t_bar, j):
 def G_t_x(u_t, mu, delta_t=DELTA_T):
     """Return the 3x3 Jacobian of the motion model function g()."""
     v_t = u_t[0]
-    omega_t = u_t[1]
+    omega_t = max(u_t[1], np.finfo(float).eps)  # Avoid div/zero.
     theta = mu[2]
 
     # The control command u_t represents a circular trajectory, whose radius
@@ -165,7 +166,7 @@ def V_t_x(u_t, mu, delta_t=DELTA_T):
     at u_t, and mu_t-1.
     """
     v_t = u_t[0]
-    w_t = u_t[1]  # "omega_t"
+    w_t = max(u_t[1], np.finfo(float).eps)  # Avoid div/zero.
     theta = mu[2]
 
     s_t = np.sin(theta)
