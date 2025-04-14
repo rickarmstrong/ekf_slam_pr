@@ -236,6 +236,8 @@ def test_measure_noisy(plot_observations=False):
     ([1., 1., -np.pi / 4.], [0., 0.], [np.sqrt(2.), -np.pi / 2.]),
 
 ])
+
+
 def test_range_bearing(sensor_pose, landmark, z_expected):
     z = range_bearing(np.array(sensor_pose), np.array(landmark))
     assert np.allclose(z, z_expected)

@@ -70,8 +70,12 @@ def g(u_t, mu, delta_t=DELTA_T, M=np.diag([0.0, 0.0])):
         Shape == (STATE_DIMS,).
     """
     v_t = u_t[0]
-    omega_t = max(u_t[1], np.finfo(float).eps)  # Avoid div/zero.
+    omega_t = u_t[1]
     theta = mu[2]
+
+    # Avoid div/zero for w_t near 0.
+    if abs(omega_t) < np.finfo(float).eps:
+        omega_t = np.finfo(float).eps
 
     # Add control noise.
     rng = np.random.default_rng()
@@ -103,8 +107,12 @@ def get_expected_measurement(mu_t_bar, j):
 def G_t_x(u_t, mu, delta_t=DELTA_T):
     """Return the 3x3 Jacobian of the motion model function g()."""
     v_t = u_t[0]
-    omega_t = max(u_t[1], np.finfo(float).eps)  # Avoid div/zero.
+    omega_t = u_t[1]
     theta = mu[2]
+
+    # Avoid div/zero for w_t near 0.
+    if abs(u_t[1]) < np.finfo(float).eps:
+        omega_t = np.finfo(float).eps
 
     # The control command u_t represents a circular trajectory, whose radius
     # is abs(v_t / omega_t). To reduce clutter we'll rename the signed ratio v/omega.
@@ -162,12 +170,16 @@ def init_landmark(mu_t, j, z):
 
 def V_t_x(u_t, mu, delta_t=DELTA_T):
     """ Return the Jacobian of the function that maps control space noise (v_t, omega_t) to state space (x, y, theta).
-    From PR ch. 7.4, eq. 7.11: this 'is the derivative of the motion function g w.r.t. the motion parameters, evaluated
-    at u_t, and mu_t-1.
+    From PR ch. 7.4, eq. 7.11: this is 'the derivative of the motion function g w.r.t. the motion parameters, evaluated
+    at u_t, and mu_t-1.'
     """
     v_t = u_t[0]
-    w_t = max(u_t[1], np.finfo(float).eps)  # Avoid div/zero.
+    w_t = u_t[1]
     theta = mu[2]
+
+    # Avoid div/zero for w_t near 0.
+    if abs(w_t) < np.finfo(float).eps:
+        w_t = np.finfo(float).eps
 
     s_t = np.sin(theta)
     c_t = np.cos(theta)
@@ -175,9 +187,9 @@ def V_t_x(u_t, mu, delta_t=DELTA_T):
     c_w_t = np.cos(theta + w_t * delta_t)
 
     V_0_0 = (1. / w_t) * (-s_t + s_w_t)
-    V_0_1 = (v_t / w_t ** 2) * s_t  - s_w_t + (v_t / w_t) * c_w_t * delta_t
+    V_0_1 = (v_t / w_t ** 2) * (s_t  - s_w_t) + (v_t / w_t) * c_w_t * delta_t
     V_1_0 = (1. / w_t) * (c_t - c_w_t)
-    V_1_1 = -(v_t / w_t ** 2) * c_t - c_w_t + (v_t / w_t) * s_w_t * delta_t
+    V_1_1 = -(v_t / w_t ** 2) * (c_t - c_w_t) + (v_t / w_t) * s_w_t * delta_t
 
     return np.array([
         [V_0_0, V_0_1],
