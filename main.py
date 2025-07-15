@@ -9,7 +9,7 @@ import time
 import numpy as np
 
 from ekf_slam import DELTA_T, LANDMARKS, STATE_DIMS, get_landmark, get_landmark_count
-from ekf_slam.ekf import F_x, g, get_expected_measurement, G_t_x, H_i_t, init_landmark, V_t_x
+from ekf_slam.ekf import F_x, g, get_expected_measurement, G_t_x, H_i_t, init_landmark, init_landmark_cartesian, V_t_x
 from ekf_slam.frames import sensor_to_map
 from ekf_slam.vis import animate, plot_all
 from ekf_slam.sim import MAX_RANGE, generate_trajectory, get_measurements, M_t, Q_t, SIM_TIME
@@ -73,7 +73,7 @@ def main():
             # use our measurement as our initial estimate.
             mu_t_j = get_landmark(mu_t_bar, j)
             if np.allclose(mu_t_j, np.zeros(2)):
-                init_landmark(mu_t_bar, j, z)
+                init_landmark_cartesian(mu_t_bar, j, sensor_to_map(z, mu_t_bar[:3]))
 
             # Get the Jacobian of the expected measurement.
             H_i_t_j = H_i_t(mu_t_bar, j, get_landmark_count(mu_t_bar))

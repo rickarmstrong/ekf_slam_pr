@@ -1,5 +1,4 @@
 from math import cos, sin
-import sys
 
 import numpy as np
 
@@ -100,7 +99,7 @@ def g(u_t, mu, delta_t=DELTA_T, M=np.diag([0.0, 0.0])):
 
 def get_expected_measurement(mu_t_bar, j):
     """Given the current state vector, return the expected measurement of landmark j
-    which is expressed in the map frame, in the sensor frame."""
+    in the sensor frame, based on the current position estimate."""
     return map_to_sensor(get_landmark(mu_t_bar, j), mu_t_bar[:3])
 
 
@@ -166,6 +165,24 @@ def init_landmark(mu_t, j, z):
     mu_t[jj(j): jj(j) + LM_DIMS] = np.array([
         x + r * cos(phi + theta),
         y + r * sin(phi + theta)])
+
+
+def init_landmark_cartesian(mu_t, j, z):
+    """
+    Set the map-frame position of landmark j in mu_t to match the cartesian
+    measurement z.
+    Args:
+        mu_t: np.array
+            State vector.
+        j : int
+            Index of the landmark we wish to update.
+        z: np.array
+            Cartesian (i.e, x-y) position of the landmark, in the map frame. shape == (2,).
+
+    Returns: None. Mutates the jth landmark in mu_t with the map-frame location of
+    the observed landmark, independent of the current robot pose.
+    """
+    mu_t[jj(j): jj(j) + LM_DIMS] = np.array(z)
 
 
 def V_t_x(u_t, mu, delta_t=DELTA_T):
