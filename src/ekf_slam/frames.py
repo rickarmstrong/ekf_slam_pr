@@ -42,7 +42,7 @@ def sensor_to_map(p, x_t):
             pose (x, y, theta) of the sensor, expressed in the map frame.
 
     Returns:
-        The (x, y) point p, expressed in the sensor frame at pose x.
+        The (x, y) point p, expressed in the map frame at pose x.
     """
     # The homogeneous sensor->map frame transformation is given by the block matrix
     # [ R t ]
