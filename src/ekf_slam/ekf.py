@@ -130,7 +130,7 @@ def H_i_t(mu_t, j, n_landmarks):
     theta = mu_t[2]
     H_0_0 = -np.cos(theta)
     H_0_1 = -np.sin(theta)
-    H_0_2 = -mu_j[0] * np.sin(theta) + mu_j[1] * np.cos(theta) + mu_t[0] * np.sin(theta) + mu_t[1] * np.cos(theta)
+    H_0_2 = -mu_j[0] * np.sin(theta) + mu_j[1] * np.cos(theta) + mu_t[0] * np.sin(theta) - mu_t[1] * np.cos(theta)
     H_0_3 = np.cos(theta)
     H_0_4 = np.sin(theta)
     H_1_0 = np.sin(theta)
